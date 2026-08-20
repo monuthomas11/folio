@@ -339,6 +339,8 @@ openai_base_url: str = "https://api.openai.com/v1"
 openai_model: str = "gpt-4o-mini"
 gemini_api_key: str = ""
 gemini_model: str = "gemini-2.0-flash"
+llm_max_requests_per_minute: int = 15
+llm_min_request_interval_seconds: float = 0.0
 analysis_min_interval_seconds: int = 300
 fundamentals_cache_ttl_seconds: int = 21600
 ```
@@ -438,6 +440,7 @@ No new chart dependencies this iteration (score bars via pure CSS width).
   `.env.example` exists (check first). Document new vars below instead:
   - Backend `.env`: `LLM_PROVIDER`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`,
     `OPENAI_MODEL`, `GEMINI_API_KEY`, `GEMINI_MODEL`,
+    `LLM_MAX_REQUESTS_PER_MINUTE`, `LLM_MIN_REQUEST_INTERVAL_SECONDS`,
     `ANALYSIS_MIN_INTERVAL_SECONDS`, `FUNDAMENTALS_CACHE_TTL_SECONDS`
 - `PLAN.md` — add "Status" section: implemented (Phase 1; AI analysis slice as
   described here) vs deferred (vision-plan items: news pipeline §17–21,
@@ -529,6 +532,8 @@ OPENAI_BASE_URL=https://api.openai.com/v1   # any OpenAI-compatible endpoint
 OPENAI_MODEL=gpt-4o-mini
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.0-flash
+LLM_MAX_REQUESTS_PER_MINUTE=15
+LLM_MIN_REQUEST_INTERVAL_SECONDS=0
 ANALYSIS_MIN_INTERVAL_SECONDS=300
 FUNDAMENTALS_CACHE_TTL_SECONDS=21600
 ```

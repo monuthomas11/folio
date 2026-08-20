@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,8 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
+    llm_max_requests_per_minute: int = Field(default=15, gt=0)
+    llm_min_request_interval_seconds: float = Field(default=0.0, ge=0)
     analysis_min_interval_seconds: int = 300
     fundamentals_cache_ttl_seconds: int = 21600
 

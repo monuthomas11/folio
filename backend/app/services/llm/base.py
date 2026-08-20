@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from abc import ABC, abstractmethod
 from typing import Any
+
+from .rate_limiter import get_llm_rate_limiter
 
 
 class LLMProviderError(Exception):
@@ -11,6 +14,19 @@ class LLMProviderError(Exception):
 
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
+_TRANSIENT_STATUSES = {429, 500, 502, 503, 504}
+
+
+def _is_transient_error(exc: LLMProviderError) -> bool:
+    text = str(exc)
+    match = re.search(r"HTTP (\d{3})", text)
+    if match and int(match.group(1)) in _TRANSIENT_STATUSES:
+        return True
+    return bool(re.search(r"request failed", text, re.IGNORECASE))
+
+
+def _retry_delay(attempt: int) -> float:
+    return 3.0 * (2 ** attempt)
 
 
 def extract_json(text: str) -> dict[str, Any]:
@@ -60,6 +76,8 @@ class LLMProvider(ABC):
         user_prompt = user
         for attempt in range(3):
             try:
+                if self.provider_id != "mock":
+                    await get_llm_rate_limiter().acquire()
                 raw = await self.generate_text(
                     system=system,
                     user=user_prompt,
@@ -68,6 +86,10 @@ class LLMProvider(ABC):
                 )
                 return extract_json(raw)
             except LLMProviderError as exc:
+                if _is_transient_error(exc):
+                    last_error = exc
+                    await asyncio.sleep(_retry_delay(attempt))
+                    continue
                 if "HTTP" in str(exc) or "request" in str(exc).lower():
                     raise
                 last_error = exc

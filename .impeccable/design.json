@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-20T00:00:00.000Z",
+  "title": "Design System: Folio",
+  "extensions": {
+    "colorMeta": {
+      "market-pine": { "role": "primary", "displayName": "Market Pine", "canonical": "oklch(0.43 0.085 170)", "tonalRamp": ["oklch(0.15 0.03 170)", "oklch(0.24 0.05 170)", "oklch(0.33 0.07 170)", "oklch(0.43 0.085 170)", "oklch(0.53 0.085 170)", "oklch(0.66 0.06 170)", "oklch(0.8 0.03 170)", "oklch(0.95 0.012 170)"] },
+      "market-pine-deep": { "role": "primary", "displayName": "Market Pine Deep", "canonical": "oklch(0.37 0.09 170)", "tonalRamp": ["oklch(0.12 0.035 170)", "oklch(0.21 0.05 170)", "oklch(0.29 0.075 170)", "oklch(0.37 0.09 170)", "oklch(0.47 0.085 170)", "oklch(0.6 0.06 170)", "oklch(0.77 0.03 170)", "oklch(0.94 0.012 170)"] },
+      "market-pine-ink": { "role": "primary", "displayName": "Market Pine Ink", "canonical": "oklch(0.31 0.09 170)", "tonalRamp": ["oklch(0.1 0.035 170)", "oklch(0.18 0.05 170)", "oklch(0.25 0.075 170)", "oklch(0.32 0.09 170)", "oklch(0.42 0.085 170)", "oklch(0.56 0.06 170)", "oklch(0.75 0.03 170)", "oklch(0.93 0.012 170)"] },
+      "market-pine-tint": { "role": "primary", "displayName": "Market Pine Tint", "canonical": "oklch(0.93 0.028 170)", "tonalRamp": ["oklch(0.15 0.03 170)", "oklch(0.24 0.05 170)", "oklch(0.33 0.07 170)", "oklch(0.43 0.085 170)", "oklch(0.55 0.06 170)", "oklch(0.7 0.03 170)", "oklch(0.85 0.018 170)", "oklch(0.93 0.028 170)"] },
+      "market-pine-ink-on-tint": { "role": "primary", "displayName": "Market Pine Ink on Tint", "canonical": "oklch(0.32 0.07 170)", "tonalRamp": ["oklch(0.12 0.03 170)", "oklch(0.32 0.07 170)", "oklch(0.42 0.06 170)", "oklch(0.52 0.05 170)", "oklch(0.64 0.035 170)", "oklch(0.76 0.02 170)", "oklch(0.88 0.01 170)", "oklch(0.96 0.005 170)"] },
+      "ember-accent": { "role": "secondary", "displayName": "Ember Accent", "canonical": "oklch(0.62 0.12 50)", "tonalRamp": ["oklch(0.2 0.04 50)", "oklch(0.3 0.06 50)", "oklch(0.4 0.09 50)", "oklch(0.5 0.11 50)", "oklch(0.62 0.12 50)", "oklch(0.7 0.1 50)", "oklch(0.82 0.06 50)", "oklch(0.94 0.025 50)"] },
+      "gain-green": { "role": "tertiary", "displayName": "Gain Green", "canonical": "oklch(0.47 0.13 152)", "tonalRamp": ["oklch(0.15 0.04 152)", "oklch(0.25 0.07 152)", "oklch(0.35 0.1 152)", "oklch(0.47 0.13 152)", "oklch(0.58 0.11 152)", "oklch(0.7 0.07 152)", "oklch(0.82 0.04 152)", "oklch(0.952 0.03 152)"] },
+      "gain-fill": { "role": "tertiary", "displayName": "Gain Fill", "canonical": "oklch(0.952 0.03 152)", "tonalRamp": ["oklch(0.15 0.04 152)", "oklch(0.25 0.07 152)", "oklch(0.35 0.1 152)", "oklch(0.47 0.13 152)", "oklch(0.58 0.11 152)", "oklch(0.7 0.07 152)", "oklch(0.82 0.04 152)", "oklch(0.952 0.03 152)"] },
+      "loss-red": { "role": "tertiary", "displayName": "Loss Red", "canonical": "oklch(0.47 0.17 27)", "tonalRamp": ["oklch(0.15 0.05 27)", "oklch(0.25 0.09 27)", "oklch(0.35 0.13 27)", "oklch(0.47 0.17 27)", "oklch(0.58 0.14 27)", "oklch(0.7 0.09 27)", "oklch(0.82 0.05 27)", "oklch(0.952 0.032 27)"] },
+      "loss-fill": { "role": "tertiary", "displayName": "Loss Fill", "canonical": "oklch(0.952 0.032 27)", "tonalRamp": ["oklch(0.15 0.05 27)", "oklch(0.25 0.09 27)", "oklch(0.35 0.13 27)", "oklch(0.47 0.17 27)", "oklch(0.58 0.14 27)", "oklch(0.7 0.09 27)", "oklch(0.82 0.05 27)", "oklch(0.952 0.032 27)"] },
+      "warn-amber": { "role": "tertiary", "displayName": "Warn Amber", "canonical": "oklch(0.5 0.1 75)", "tonalRamp": ["oklch(0.18 0.035 75)", "oklch(0.28 0.06 75)", "oklch(0.38 0.08 75)", "oklch(0.5 0.1 75)", "oklch(0.6 0.1 75)", "oklch(0.71 0.08 75)", "oklch(0.83 0.05 75)", "oklch(0.948 0.032 78)"] },
+      "warn-fill": { "role": "tertiary", "displayName": "Warn Fill", "canonical": "oklch(0.948 0.032 78)", "tonalRamp": ["oklch(0.18 0.035 75)", "oklch(0.28 0.06 75)", "oklch(0.38 0.08 75)", "oklch(0.5 0.1 75)", "oklch(0.6 0.1 75)", "oklch(0.71 0.08 75)", "oklch(0.83 0.05 75)", "oklch(0.948 0.032 78)"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "oklch(0.992 0.003 175)", "tonalRamp": ["oklch(0.18 0.015 170)", "oklch(0.3 0.015 170)", "oklch(0.45 0.012 170)", "oklch(0.6 0.008 170)", "oklch(0.75 0.004 170)", "oklch(0.86 0.003 170)", "oklch(0.95 0.002 170)", "oklch(0.992 0.003 175)"] },
+      "page": { "role": "neutral", "displayName": "Page", "canonical": "oklch(0.976 0.005 175)", "tonalRamp": ["oklch(0.18 0.015 170)", "oklch(0.3 0.015 170)", "oklch(0.45 0.012 170)", "oklch(0.6 0.008 170)", "oklch(0.75 0.004 170)", "oklch(0.86 0.003 170)", "oklch(0.93 0.004 170)", "oklch(0.976 0.005 175)"] },
+      "sidebar": { "role": "neutral", "displayName": "Sidebar", "canonical": "oklch(0.972 0.006 170)", "tonalRamp": ["oklch(0.18 0.02 170)", "oklch(0.3 0.02 170)", "oklch(0.45 0.016 170)", "oklch(0.6 0.01 170)", "oklch(0.75 0.006 170)", "oklch(0.86 0.005 170)", "oklch(0.93 0.006 170)", "oklch(0.972 0.006 170)"] },
+      "paper-tinted": { "role": "neutral", "displayName": "Tinted Paper", "canonical": "oklch(0.955 0.008 170)", "tonalRamp": ["oklch(0.18 0.02 170)", "oklch(0.3 0.02 170)", "oklch(0.45 0.016 170)", "oklch(0.6 0.01 170)", "oklch(0.75 0.006 170)", "oklch(0.86 0.005 170)", "oklch(0.92 0.007 170)", "oklch(0.955 0.008 170)"] },
+      "paper-tinted-2": { "role": "neutral", "displayName": "Tinted Paper 2", "canonical": "oklch(0.94 0.012 170)", "tonalRamp": ["oklch(0.18 0.025 170)", "oklch(0.3 0.025 170)", "oklch(0.45 0.02 170)", "oklch(0.6 0.012 170)", "oklch(0.75 0.008 170)", "oklch(0.85 0.008 170)", "oklch(0.9 0.01 170)", "oklch(0.94 0.012 170)"] },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "oklch(0.925 0.008 172)", "tonalRamp": ["oklch(0.18 0.025 170)", "oklch(0.3 0.025 170)", "oklch(0.45 0.02 170)", "oklch(0.6 0.012 170)", "oklch(0.74 0.008 170)", "oklch(0.84 0.008 170)", "oklch(0.9 0.008 170)", "oklch(0.925 0.008 172)"] },
+      "hairline-strong": { "role": "neutral", "displayName": "Hairline Strong", "canonical": "oklch(0.86 0.01 172)", "tonalRamp": ["oklch(0.18 0.025 170)", "oklch(0.3 0.025 170)", "oklch(0.45 0.02 170)", "oklch(0.6 0.012 170)", "oklch(0.72 0.01 170)", "oklch(0.8 0.01 170)", "oklch(0.84 0.009 170)", "oklch(0.86 0.01 172)"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "oklch(0.22 0.02 170)", "tonalRamp": ["oklch(0.12 0.012 170)", "oklch(0.22 0.02 170)", "oklch(0.32 0.02 170)", "oklch(0.45 0.016 170)", "oklch(0.58 0.012 170)", "oklch(0.72 0.008 170)", "oklch(0.85 0.006 170)", "oklch(0.95 0.004 170)"] },
+      "ink-strong": { "role": "neutral", "displayName": "Ink Strong", "canonical": "oklch(0.15 0.018 170)", "tonalRamp": ["oklch(0.08 0.012 170)", "oklch(0.15 0.018 170)", "oklch(0.26 0.02 170)", "oklch(0.4 0.016 170)", "oklch(0.55 0.012 170)", "oklch(0.7 0.008 170)", "oklch(0.84 0.006 170)", "oklch(0.94 0.004 170)"] },
+      "muted": { "role": "neutral", "displayName": "Muted", "canonical": "oklch(0.46 0.016 170)", "tonalRamp": ["oklch(0.18 0.02 170)", "oklch(0.3 0.02 170)", "oklch(0.46 0.016 170)", "oklch(0.58 0.012 170)", "oklch(0.7 0.008 170)", "oklch(0.82 0.006 170)", "oklch(0.92 0.005 170)", "oklch(0.97 0.004 170)"] },
+      "faint": { "role": "neutral", "displayName": "Faint", "canonical": "oklch(0.61 0.013 170)", "tonalRamp": ["oklch(0.2 0.02 170)", "oklch(0.32 0.02 170)", "oklch(0.45 0.016 170)", "oklch(0.61 0.013 170)", "oklch(0.73 0.01 170)", "oklch(0.84 0.008 170)", "oklch(0.93 0.006 170)", "oklch(0.97 0.004 170)"] },
+      "placeholder": { "role": "neutral", "displayName": "Placeholder", "canonical": "oklch(0.5 0.014 170)", "tonalRamp": ["oklch(0.18 0.02 170)", "oklch(0.3 0.02 170)", "oklch(0.42 0.016 170)", "oklch(0.5 0.014 170)", "oklch(0.62 0.012 170)", "oklch(0.76 0.008 170)", "oklch(0.9 0.006 170)", "oklch(0.97 0.004 170)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles. One per page." },
+      "headline": { "displayName": "Headline", "purpose": "KPI values, panel header values." },
+      "title": { "displayName": "Title", "purpose": "Panel titles, section headings, brand name." },
+      "body": { "displayName": "Body", "purpose": "Default UI text, table cells, descriptions." },
+      "label": { "displayName": "Label", "purpose": "Field labels, KPI labels, overlines. Uppercase 11px." }
+    },
+    "shadows": [
+      { "name": "ambient-low", "value": "0 1px 2px oklch(0.22 0.02 170 / 0.05), 0 1px 1px oklch(0.22 0.02 170 / 0.03)", "purpose": "Resting cards, buttons, brand mark." },
+      { "name": "ambient-mid", "value": "0 6px 16px -4px oklch(0.2 0.02 170 / 0.1)", "purpose": "Loader mark, small lifted elements." },
+      { "name": "ambient-high", "value": "0 24px 48px -16px oklch(0.18 0.02 170 / 0.22), 0 4px 12px -4px oklch(0.18 0.02 170 / 0.08)", "purpose": "Drawer, popovers, overlays." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default easing for all transitions." },
+      { "name": "duration-fast", "value": "120ms", "purpose": "State transitions (hover, active, focus)." },
+      { "name": "duration-base", "value": "200ms", "purpose": "Fades, small entrances." },
+      { "name": "duration-slow", "value": "320ms", "purpose": "Drawer slide, form enter." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "640px", "purpose": "KPI cards collapse padding; grid stacks." },
+      { "name": "tablet", "value": "760px", "purpose": "Sidebar hides, drawer takes over." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Single Market Pine action per view.",
+      "html": "<button class=\"ds-btn-primary\">Refresh prices</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border: 1px solid transparent; border-radius: 8px; background: var(--primary); color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1; cursor: pointer; box-shadow: 0 1px 2px oklch(0.2 0.02 170 / 0.05); transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), transform 120ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: var(--primary-hover); } .ds-btn-primary:active { background: var(--primary-active); transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Adjacent action when a primary exists.",
+      "html": "<button class=\"ds-btn-secondary\">Export</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg); color: var(--ink); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), border-color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-secondary:hover { background: var(--surface); border-color: var(--ink); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis inline action.",
+      "html": "<button class=\"ds-btn-ghost\">Dismiss</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-ghost:hover { background: var(--surface); color: var(--ink); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Position state at a glance: dot + tint + label.",
+      "html": "<span class=\"ds-pill ds-pill-healthy\"><span class=\"ds-pill-dot\"></span>Healthy</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 9999px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; } .ds-pill-dot { width: 6px; height: 6px; border-radius: 9999px; flex: none; } .ds-pill-healthy { background: var(--primary-tint); color: oklch(0.38 0.07 170); } .ds-pill-healthy .ds-pill-dot { background: var(--primary); } .ds-pill-warn { background: var(--warn-fill); color: oklch(0.42 0.09 78); } .ds-pill-warn .ds-pill-dot { background: var(--warn); } .ds-pill-danger { background: var(--loss-fill); color: oklch(0.42 0.14 27); } .ds-pill-danger .ds-pill-dot { background: var(--loss); } .ds-pill-gain { background: var(--gain-fill); color: oklch(0.42 0.12 152); } .ds-pill-gain .ds-pill-dot { background: var(--gain); } .ds-pill-neutral { background: var(--surface-2); color: var(--muted); } .ds-pill-neutral .ds-pill-dot { background: var(--faint); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Form field with pine focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-label\">Avg. buy price</span><input class=\"ds-input\" type=\"text\" placeholder=\"e.g. 2450.50\"></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; } .ds-label { font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); } .ds-input { height: 40px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg); color: var(--ink); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 13px; transition: border-color 120ms cubic-bezier(0.16,1,0.3,1), box-shadow 120ms cubic-bezier(0.16,1,0.3,1); } .ds-input::placeholder { color: var(--placeholder); } .ds-input:hover { border-color: var(--ink); } .ds-input:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-tint); }"
+    },
+    {
+      "name": "KPI Card",
+      "kind": "card",
+      "refersTo": "kpi-card",
+      "description": "At-a-glance portfolio number with tabular value.",
+      "html": "<div class=\"ds-kpi\"><span class=\"ds-kpi-label\">Total P/L</span><span class=\"ds-kpi-value ds-kpi-gain\">₹ 48,250</span><span class=\"ds-kpi-sub\">+8.4% overall return</span></div>",
+      "css": ".ds-kpi { display: flex; flex-direction: column; gap: 8px; padding: 20px 24px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 2px oklch(0.2 0.02 170 / 0.05); } .ds-kpi-label { font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); } .ds-kpi-value { font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; color: var(--ink-strong); font-variant-numeric: tabular-nums; } .ds-kpi-gain { color: var(--gain); } .ds-kpi-loss { color: var(--loss); } .ds-kpi-sub { font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "40px row; active state uses Market Pine Tint.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-active\" href=\"#\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg><span>Dashboard</span></a><a class=\"ds-nav-item\" href=\"#\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 4h6v6H4z\"/><path d=\"M14 4h6v16H14z\"/><path d=\"M4 14h6v6H4z\"/></svg><span>Portfolio</span></a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; } .ds-nav-item { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 8px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-nav-item svg { color: var(--faint); } .ds-nav-item:hover { background: var(--surface-2); color: var(--ink); } .ds-nav-item:hover svg { color: var(--ink); } .ds-nav-active, .ds-nav-active:hover { background: var(--primary-tint); color: oklch(0.32 0.07 170); font-weight: 600; } .ds-nav-active svg, .ds-nav-active:hover svg { color: var(--primary); } .ds-nav-item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Brand Mark",
+      "kind": "custom",
+      "refersTo": "brand-mark",
+      "description": "32px Market Pine square with grid icon in white.",
+      "html": "<div class=\"ds-brand\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg></div>",
+      "css": ".ds-brand { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--primary); color: #fff; box-shadow: 0 1px 2px oklch(0.2 0.02 170 / 0.05); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Investor's Ledger",
+    "overview": "Folio is a ledger the investor can trust at a glance. Every screen reads like a well-kept trading journal: calm, precise, and unhurried. The personality is sharp and analytical — nothing decorative, nothing urgent, nothing theatrical. The interface earns its density through real information: prices, quantities, P/L, stop-losses, and targets, all rendered in tabular numerals so a column of numbers can be compared by eye.\n\nThe palette is near-white paper tinted ever so slightly toward the primary's own green-teal hue, with a single deep Market Pine voice for actions and active states. Depth comes from tonal layering and hairline borders first; shadows appear only where a surface genuinely lifts (cards, the drawer, the brand mark). Color never carries meaning alone — gain and loss always pair with a label or direction arrow — because the investor may be color-blind, and the ledger must still be legible.\n\nThis system explicitly rejects the trading terminal (no dark screens, no glowing charts, no flickering tickers) and the generic SaaS cliché (no gradient text, no glassmorphism, no hero-metric landing, no identical icon-card grids). Folio's calm is a feature: the market is loud, the dashboard is not.",
+    "keyCharacteristics": [
+      "One accent voice (Market Pine) for action and active state; semantic greens/reds/ambers only for P/L state.",
+      "Hairline borders and tonal surfaces over shadows; elevation is quiet and earned.",
+      "Tabular numerals everywhere numbers align in a column.",
+      "A single type family (Geist) carrying the whole hierarchy — contrast through weight, not font pairing.",
+      "Sticky, conventional structure (fixed sidebar, page headers, panel grid) so the data, not the chrome, gets the attention."
+    ],
+    "rules": [
+      { "name": "The One-Voice Rule", "body": "Market Pine is the only action color. One primary action per view; secondary and ghost exist so a screen never holds two pine buttons competing.", "section": "colors" },
+      { "name": "The No-Gray-Gain Rule", "body": "Gain and loss are never expressed as gray or as contrast alone. Always pair the semantic color with a label, a direction arrow, or a dot — color is an enhancement, not the message.", "section": "colors" },
+      { "name": "The Tinted-Paper Rule", "body": "Every near-white neutral is tinted toward hue 170 (the brand's own hue) with chroma 0.005–0.007. Warm beige, cream, and sand are prohibited as backgrounds.", "section": "colors" },
+      { "name": "The Tabular Numbers Rule", "body": "Every price, quantity, and percentage uses font-variant-numeric: tabular-nums. A column of P/L must align like a printed statement.", "section": "typography" },
+      { "name": "The Label-Uppercase Rule", "body": "Labels are always 11px, 600, uppercase, tracking 0.05–0.08em — never bold body text wearing a caps class, never 12–13px small caps hybrids.", "section": "typography" },
+      { "name": "The Uppercase-Ceiling Rule", "body": "Uppercase is for labels only. Never uppercase a heading, a button label, or prose.", "section": "typography" },
+      { "name": "The Quiet-Lift Rule", "body": "Elevation through tone first, shadow second. If a surface sits on the page background, it needs a hairline border or a tint, not a shadow. No element may use more than one shadow step.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the Market Pine voice exclusive: one primary action per view, secondary/ghost everywhere else.",
+      "Do use tabular numerals for every price, quantity, P/L, and percentage.",
+      "Do prefer tonal layering and hairline borders for depth; reach for shadows only when a surface really lifts.",
+      "Do pair gain/loss color with a label, arrow, or dot — never color alone.",
+      "Do respect reduced motion: transitions collapse to near-instant, pulses stop.",
+      "Do keep placeholder text at ≥4.5:1 contrast; never the muted-gray default.",
+      "Do use the 11px uppercase label style consistently for field and KPI labels — it's the system's voice, not an eyebrow."
+    ],
+    "donts": [
+      "Don't build a trading terminal: no dark backgrounds, no glowing or flickering charts, no blinking tickers, no urgency theatrics.",
+      "Don't reach for SaaS clichés: no gradient text, no glassmorphism, no hero-metric landing hero, no identical icon-card grids, no 01 / 02 / 03 scaffolding.",
+      "Don't use warm beige, cream, or sand backgrounds; every neutral tints toward hue 170.",
+      "Don't use a colored border-left or border-right accent stripe on cards, list items, or alerts — use full borders, tints, or dots.",
+      "Don't nest cards. A card is a leaf.",
+      "Don't use gray or pure #f00 for gain/loss; the semantic red is a muted oklch(0.47 0.17 27).",
+      "Don't uppercase headings, buttons, or prose — uppercase is the label style only.",
+      "Don't use arbitrary z-index values (999/9999); the token scale is dropdown → sticky → backdrop → modal → toast → tooltip."
+    ]
+  }
+}

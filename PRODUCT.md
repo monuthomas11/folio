@@ -2,6 +2,10 @@
 
 <!-- impeccable:product-schema 1 -->
 
+## Register
+
+product
+
 ## Platform
 
 web
@@ -57,19 +61,29 @@ Deferred future work (confirmed as later, not dropped):
 - Fundamental analysis: company financials and ratios from yfinance.
 - AI-assisted explanations of stock performance and outlook.
 
-## Brand Commitments
+## Brand Personality
 
-None established beyond the working name "Folio" used in PLAN.md. No logo, palette, typography, voice, or identity constraints are binding yet.
+Sharp, focused, analytical. The voice is calm, precise, and unhurried — a deliberate investor's ledger, not a sales pitch. Every screen reads like a number you can trust at a glance: no hype, no ornament, no noise. The emotional goal is confidence: the user looks at a position and immediately knows whether it is healthy, at its stop-loss, or at its target.
+
+## Anti-references
+
+- Not a trading terminal: no dark screens, no glowing charts, no flickering tickers, no urgency theatrics.
+- Not the generic SaaS cliché: no gradient text, no glassmorphism, no hero-metric marketing, no identical icon-card grids.
+- No market-noise trappings: no ads, no pushy upsell, no features that act without the user's say-so.
+
+## Design Principles
+
+1. **User record is the source of truth** — positions (quantity, buy price, SL, target, broker) come from the user; external data only supplies the LTP.
+2. **Current-state clarity** — the dashboard answers "is each position healthy, at stop-loss, or at target" at a glance; store only what that today-view needs, no historical bloat.
+3. **Manual and predictable** — price refresh is user-triggered, never silently automated; the app must never act without the user asking.
+4. **In-app signal over push** — alerts live in the dashboard the user already checks; no email, no push.
+5. **Multi-user privacy** — holdings and alerts are isolated per user; every query is scoped by `user_id`.
+
+## Accessibility & Inclusion
+
+WCAG 2.1 AA is the bar. That means legible contrast (body text ≥4.5:1), full keyboard operability with visible focus rings, `prefers-reduced-motion` respected for all animation, semantic HTML and labeled form controls, and tabular numerals for price/P/L columns so values stay aligned. Color is never the sole channel for gain/loss state.
 
 ## Evidence on Hand
 
 - PLAN.md: schema sketch (users, holdings), API endpoint list, phased roadmap, deployment checklist.
 - No implementation code, no real user data, no screenshots, no testimonials. Future work must not fabricate user content.
-
-## Product Principles
-
-1. **User record is the source of truth** — positions (quantity, buy price, SL, target, broker) come from the user; external data only provides LTP.
-2. **Current-state simplicity** — store only what the dashboard needs today; no historical bloat in the MVP.
-3. **Manual and predictable** — price refresh is user-triggered, not silently automated.
-4. **In-app signal over push** — alerts live in the dashboard the user already checks.
-5. **Multi-user privacy** — holdings and alerts are isolated per user; sharing is optional and deferred.

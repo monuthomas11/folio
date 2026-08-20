@@ -75,7 +75,8 @@ Frontend `.env.local`: `NEXT_PUBLIC_API_URL`
 
 AI analyzer env vars (backend `.env`, see `Analyzer-Implementation-Plan.md`): `LLM_PROVIDER=mock` is the
 offline default (no key needed); `OPENAI_API_KEY`/`OPENAI_BASE_URL`/`OPENAI_MODEL`,
-`GEMINI_API_KEY`/`GEMINI_MODEL`, `ANALYSIS_MIN_INTERVAL_SECONDS=300`,
+`GEMINI_API_KEY`/`GEMINI_MODEL`, `LLM_MAX_REQUESTS_PER_MINUTE=15`,
+`LLM_MIN_REQUEST_INTERVAL_SECONDS=0`, `ANALYSIS_MIN_INTERVAL_SECONDS=300`,
 `FUNDAMENTALS_CACHE_TTL_SECONDS=21600`.
 
 Use SQLite locally (`sqlite:///./folio.db`), Neon Postgres in production. Never commit secrets.

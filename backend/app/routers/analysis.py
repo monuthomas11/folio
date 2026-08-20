@@ -238,9 +238,17 @@ def latest_portfolio_analysis(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No portfolio analysis available yet",
         )
+
+    last_run = db.scalar(
+        select(models.AnalysisRun)
+        .where(models.AnalysisRun.user_id == user.id)
+        .order_by(models.AnalysisRun.created_at.desc())
+        .limit(1)
+    )
     return schemas.LatestPortfolioAnalysisOut(
         portfolio=portfolio_rec,
         holdings=list(latest_by_symbol.values()),
+        last_run=last_run,
     )
 
 

@@ -129,6 +129,9 @@ class Recommendation(Base):
     action: Mapped[str] = mapped_column(String(40))
     confidence: Mapped[int | None] = mapped_column(Integer, nullable=True)
     scores: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    portfolio_weight: Mapped[float | None] = mapped_column(
+        Numeric(8, 2), nullable=True
+    )
     thesis_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
     summary: Mapped[str] = mapped_column(Text)
     why: Mapped[str | None] = mapped_column(Text, nullable=True)

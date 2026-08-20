@@ -127,6 +127,7 @@ def _persist_recommendation(
     quality_flags: list[str],
     analysis_timestamps: dict,
     evidence_items: list | None = None,
+    portfolio_weight: float | None = None,
 ) -> models.Recommendation:
     scores = output.get("scores")
     if not isinstance(scores, dict):
@@ -145,6 +146,7 @@ def _persist_recommendation(
         action=str(output.get("action") or "HOLD_MONITOR"),
         confidence=output.get("confidence"),
         scores=scores,
+        portfolio_weight=portfolio_weight,
         thesis_status=output.get("thesis_status"),
         summary=str(output.get("summary") or ""),
         why=output.get("why"),
@@ -266,6 +268,7 @@ async def _analyze_single_holding(
             "note": "LTP and fundamentals observed via yfinance at generation time.",
         },
         [item.model_dump() for item in builder.items],
+        pack.get("position", {}).get("portfolio_weight_pct"),
     )
 
 

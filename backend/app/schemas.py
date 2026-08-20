@@ -147,6 +147,7 @@ class RecommendationOut(APIModel):
     action: str
     confidence: int | None
     scores: dict | None
+    portfolio_weight: float | None
     thesis_status: str | None
     summary: str
     why: str | None
@@ -173,9 +174,17 @@ class RecommendationOut(APIModel):
     created_at: datetime
 
 
-class LatestPortfolioAnalysisOut(BaseModel):
+class LatestAnalysisRunInfo(APIModel):
+    provider: str
+    model_name: str | None = None
+    completed_at: datetime | None = None
+    created_at: datetime
+
+
+class LatestPortfolioAnalysisOut(APIModel):
     portfolio: RecommendationOut | None
     holdings: list[RecommendationOut]
+    last_run: LatestAnalysisRunInfo | None = None
 
 
 class InvestmentProfileIn(APIModel):
