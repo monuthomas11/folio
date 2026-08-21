@@ -1,0 +1,65 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex: none;
+}
+
+.healthy {
+  background: var(--primary-tint);
+  color: var(--primary-ink);
+}
+
+.healthy .dot {
+  background: var(--primary);
+}
+
+.warn {
+  background: var(--warn-fill);
+  color: oklch(0.42 0.09 78);
+}
+
+.warn .dot {
+  background: var(--warn);
+}
+
+.danger {
+  background: var(--loss-fill);
+  color: oklch(0.42 0.14 27);
+}
+
+.danger .dot {
+  background: var(--loss);
+}
+
+.gain {
+  background: var(--gain-fill);
+  color: oklch(0.42 0.12 152);
+}
+
+.gain .dot {
+  background: var(--gain);
+}
+
+.neutral {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.neutral .dot {
+  background: var(--faint);
+}

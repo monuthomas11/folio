@@ -1,0 +1,106 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--duration-base) var(--ease-out-expo),
+    box-shadow var(--duration-base) var(--ease-out-expo),
+    transform var(--duration-base) var(--ease-out-expo);
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.marker {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+}
+
+.gain .marker {
+  background: var(--gain);
+}
+
+.loss .marker {
+  background: var(--loss);
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ink-strong);
+}
+
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.trendUp {
+  color: var(--gain);
+}
+
+.trendDown {
+  color: var(--loss);
+}
+
+.sub {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.default .sub {
+  color: var(--muted);
+}
+
+.gain .value {
+  color: var(--gain);
+}
+
+.loss .value {
+  color: var(--loss);
+}
+
+.skel {
+  margin: 0.25rem 0;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .value {
+    font-size: var(--text-xl);
+  }
+}

@@ -1,0 +1,259 @@
+import type {
+  AnalysisRun,
+  AnalysisRunDetail,
+  AuthUser,
+  Holding,
+  HoldingsInput,
+  ImportResult,
+  InvestmentProfile,
+  InvestmentProfileInput,
+  LatestPortfolioAnalysis,
+  PortfolioAlert,
+  PortfolioSnapshot,
+  Recommendation,
+} from "./types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const TOKEN_KEY = "folio_token";
+const USER_KEY = "folio_user";
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+function readToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(TOKEN_KEY);
+}
+
+export function getStoredUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    return null;
+  }
+}
+
+export function storeSession(token: string, user: AuthUser): void {
+  window.localStorage.setItem(TOKEN_KEY, token);
+  window.localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function clearSession(): void {
+  window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(USER_KEY);
+}
+
+interface RequestOptions {
+  method?: string;
+  body?: unknown;
+  token?: string | null;
+}
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const token = options.token === undefined ? readToken() : options.token;
+  const headers: Record<string, string> = {};
+  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new ApiError("Could not reach the server. Is the backend running?", 0);
+  }
+
+  if (res.status === 204) return undefined as T;
+
+  const text = await res.text();
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  if (!res.ok) {
+    const detail = (data as { detail?: string })?.detail;
+    const error = new ApiError(
+      typeof detail === "string" ? detail : `Request failed (${res.status})`,
+      res.status,
+    );
+    if (res.status === 401 && token) {
+      clearSession();
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    throw error;
+  }
+
+  return data as T;
+}
+
+export const auth = {
+  async register(name: string, email: string, password: string): Promise<AuthUser> {
+    const res = await request<{ access_token: string; user: AuthUser }>(
+      "/auth/register",
+      { method: "POST", body: { name, email, password } },
+    );
+    storeSession(res.access_token, res.user);
+    return res.user;
+  },
+
+  async login(email: string, password: string): Promise<AuthUser> {
+    const res = await request<{ access_token: string; user: AuthUser }>(
+      "/auth/login",
+      { method: "POST", body: { email, password } },
+    );
+    storeSession(res.access_token, res.user);
+    return res.user;
+  },
+
+  async me(token: string): Promise<AuthUser> {
+    return request<AuthUser>("/auth/me", { token });
+  },
+};
+
+export const api = {
+  async getSnapshot(): Promise<PortfolioSnapshot> {
+    return request<PortfolioSnapshot>("/dashboard");
+  },
+
+  async getAlerts(includeDismissed = false): Promise<PortfolioAlert[]> {
+    return request<PortfolioAlert[]>(`/alerts?include_dismissed=${includeDismissed}`);
+  },
+
+  async addHolding(input: HoldingsInput): Promise<Holding> {
+    return request<Holding>("/holdings", { method: "POST", body: input });
+  },
+
+  async updateHolding(id: string, input: HoldingsInput): Promise<Holding> {
+    return request<Holding>(`/holdings/${id}`, { method: "PUT", body: input });
+  },
+
+  async deleteHolding(id: string): Promise<void> {
+    return request<void>(`/holdings/${id}`, { method: "DELETE" });
+  },
+
+  async exportHoldings(): Promise<string> {
+    return request<string>("/holdings/export");
+  },
+
+  async importHoldings(csv: string): Promise<ImportResult> {
+    return request<ImportResult>("/holdings/import", {
+      method: "POST",
+      body: { csv },
+    });
+  },
+
+  async refreshAll(): Promise<Holding[]> {
+    return request<Holding[]>("/holdings/fetch-all", { method: "POST" });
+  },
+
+  async refreshSymbol(symbol: string): Promise<void> {
+    await request(`/holdings/fetch-price/${encodeURIComponent(symbol)}`, {
+      method: "POST",
+    });
+  },
+
+  async dismissAlert(id: string): Promise<void> {
+    await request(`/alerts/${id}/dismiss`, { method: "PUT" });
+  },
+
+  async startHoldingAnalysis(holdingId: string): Promise<{ runId: string }> {
+    return request<{ runId: string }>(`/analysis/holding/${holdingId}`, {
+      method: "POST",
+    });
+  },
+
+  async startPortfolioAnalysis(): Promise<{ runId: string }> {
+    return request<{ runId: string }>("/analysis/portfolio", {
+      method: "POST",
+    });
+  },
+
+  async getAnalysisRun(runId: string): Promise<AnalysisRunDetail> {
+    return request<AnalysisRunDetail>(`/analysis/${runId}`);
+  },
+
+  async getLatestHoldingAnalysis(holdingId: string): Promise<Recommendation | null> {
+    try {
+      return await request<Recommendation>(
+        `/analysis/latest/holding/${holdingId}`,
+      );
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }
+  },
+
+  async getLatestPortfolioAnalysis(): Promise<LatestPortfolioAnalysis | null> {
+    try {
+      return await request<LatestPortfolioAnalysis>("/analysis/latest/portfolio");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }
+  },
+
+  async getProfile(): Promise<InvestmentProfile> {
+    return request<InvestmentProfile>("/profile");
+  },
+
+  async updateProfile(input: InvestmentProfileInput): Promise<InvestmentProfile> {
+    return request<InvestmentProfile>("/profile", {
+      method: "PUT",
+      body: input,
+    });
+  },
+};
+
+export interface RunStatus {
+  status: AnalysisRun["status"];
+  stage: string | null;
+  errorMessage: string | null;
+}
+
+export async function pollRun(
+  runId: string,
+  onUpdate: (status: RunStatus) => void,
+  timeoutMs = 1800000,
+  intervalMs = 2000,
+): Promise<AnalysisRunDetail> {
+  const deadline = Date.now() + timeoutMs;
+  let last: AnalysisRunDetail;
+  for (;;) {
+    last = await api.getAnalysisRun(runId);
+    onUpdate({
+      status: last.status,
+      stage: last.stage,
+      errorMessage: last.errorMessage,
+    });
+    if (
+      last.status === "COMPLETED" ||
+      last.status === "PARTIAL_COMPLETION" ||
+      last.status === "FAILED"
+    ) {
+      return last;
+    }
+    if (Date.now() >= deadline) {
+      throw new ApiError("Analysis timed out. Try again shortly.", 0);
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+}

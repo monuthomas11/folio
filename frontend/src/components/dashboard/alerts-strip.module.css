@@ -1,0 +1,153 @@
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.heading {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
+}
+
+.count {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid;
+  animation: enter var(--duration-slow) var(--ease-out-expo);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sl {
+  background: var(--loss-fill);
+  border-color: oklch(0.88 0.05 27);
+}
+
+.target {
+  background: var(--gain-fill);
+  border-color: oklch(0.88 0.05 152);
+}
+
+.iconWrap {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--radius-md);
+}
+
+.sl .iconWrap {
+  background: var(--loss);
+  color: #fff;
+}
+
+.target .iconWrap {
+  background: var(--gain);
+  color: #fff;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.message {
+  font-size: var(--text-sm);
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.message strong {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.price {
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.meta {
+  font-size: var(--text-2xs);
+  color: var(--muted);
+}
+
+.arrow {
+  margin-left: auto;
+  color: var(--ink);
+  flex: none;
+}
+
+.sl .arrow {
+  color: oklch(0.45 0.15 27);
+}
+
+.target .arrow {
+  color: oklch(0.45 0.13 152);
+}
+
+.dismiss {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out-expo),
+    color var(--duration-fast) var(--ease-out-expo);
+}
+
+.dismiss:hover {
+  background: oklch(1 0 0 / 0.55);
+  color: var(--ink);
+}
+
+.compact .message {
+  font-size: var(--text-sm);
+}
