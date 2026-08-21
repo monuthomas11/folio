@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: folio-backend
+    env: python
+    region: singapore
+    plan: free
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: FRONTEND_ORIGIN
+        value: https://folio-three-neon.vercel.app
+      - key: LLM_PROVIDER
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: LLM_MAX_REQUESTS_PER_MINUTE
+        value: 15
+      - key: LLM_MIN_REQUEST_INTERVAL_SECONDS
+        value: 0
+      - key: ANALYSIS_MIN_INTERVAL_SECONDS
+        value: 300
+      - key: FUNDAMENTALS_CACHE_TTL_SECONDS
+        value: 21600
