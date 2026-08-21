@@ -10,6 +10,7 @@ if os.path.exists(_test_db):
 os.environ["DATABASE_URL"] = f"sqlite:///{_test_db}"
 os.environ["JWT_SECRET"] = "test-secret-key-that-is-long-enough-1234567890"
 os.environ["FRONTEND_ORIGIN"] = "http://localhost:3000"
+os.environ["LLM_PROVIDER"] = "mock"
 
 from fastapi.testclient import TestClient  # noqa: E402
 

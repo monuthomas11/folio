@@ -187,6 +187,24 @@ class LatestPortfolioAnalysisOut(APIModel):
     last_run: LatestAnalysisRunInfo | None = None
 
 
+class ChatMessageIn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class ChatRequest(BaseModel):
+    context: str = Field(pattern="^(holding|portfolio)$")
+    holdingId: str | None = None
+    message: str = Field(min_length=1, max_length=2000)
+    history: list[ChatMessageIn] = Field(default_factory=list, max_length=10)
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    provider: str
+    modelName: str | None = None
+
+
 class InvestmentProfileIn(APIModel):
     investment_style: str | None = Field(default=None, max_length=30)
     risk_tolerance: str | None = Field(default=None, max_length=20)

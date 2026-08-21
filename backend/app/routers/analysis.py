@@ -13,6 +13,11 @@ from ..services.analysis.orchestrator import (
     run_holding_analysis,
     run_portfolio_analysis,
 )
+from ..services.analysis.chat import (
+    build_holding_chat_context,
+    build_portfolio_chat_context,
+    render_chat_prompt,
+)
 from ..services.llm.base import LLMProviderError
 from ..services.llm.registry import get_llm_provider
 
@@ -109,6 +114,114 @@ def _provider_meta() -> tuple[str, str | None]:
             detail=f"LLM provider misconfigured: {exc}",
         )
     return provider.provider_id, provider.model_name or None
+
+
+@router.post("/chat", response_model=schemas.ChatResponse)
+async def ask_ai_chat(
+    payload: schemas.ChatRequest,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        provider = get_llm_provider()
+    except LLMProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"LLM provider misconfigured: {exc}",
+        )
+
+    history = [
+        {"role": m.role, "content": m.content} for m in payload.history
+    ]
+
+    if payload.context == "holding":
+        if not payload.holdingId:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="holdingId is required when context is holding",
+            )
+        holding = _get_owned_holding(db, user, payload.holdingId)
+        rec = db.scalar(
+            select(models.Recommendation)
+            .where(
+                models.Recommendation.user_id == user.id,
+                models.Recommendation.holding_id == holding.id,
+                models.Recommendation.kind == "holding",
+            )
+            .order_by(models.Recommendation.created_at.desc())
+            .limit(1)
+        )
+        if rec is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No analysis available for this holding yet",
+            )
+        holdings = list(
+            db.scalars(
+                select(models.Holding).where(models.Holding.user_id == user.id)
+            ).all()
+        )
+        profile = db.get(models.InvestmentProfile, user.id)
+        if profile is None:
+            profile = models.InvestmentProfile(user_id=user.id)
+        context = build_holding_chat_context(holding, rec, holdings, profile)
+    else:
+        portfolio_rec = db.scalar(
+            select(models.Recommendation)
+            .where(
+                models.Recommendation.user_id == user.id,
+                models.Recommendation.kind == "portfolio",
+            )
+            .order_by(models.Recommendation.created_at.desc())
+            .limit(1)
+        )
+        holding_recs = db.scalars(
+            select(models.Recommendation)
+            .where(
+                models.Recommendation.user_id == user.id,
+                models.Recommendation.kind == "holding",
+            )
+            .order_by(models.Recommendation.created_at.desc())
+        ).all()
+        latest_by_symbol: dict[str, models.Recommendation] = {}
+        for rec in holding_recs:
+            latest_by_symbol.setdefault(rec.symbol, rec)
+        if portfolio_rec is None and not latest_by_symbol:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No portfolio analysis available yet",
+            )
+        holdings = list(
+            db.scalars(
+                select(models.Holding).where(models.Holding.user_id == user.id)
+            ).all()
+        )
+        profile = db.get(models.InvestmentProfile, user.id)
+        if profile is None:
+            profile = models.InvestmentProfile(user_id=user.id)
+        context = build_portfolio_chat_context(
+            portfolio_rec, list(latest_by_symbol.values()), holdings, profile
+        )
+
+    prompt = render_chat_prompt(context, history, payload.message)
+    try:
+        reply = await provider.generate_text(
+            system="You are Folio's financial chat assistant.",
+            user=prompt,
+            temperature=0.4,
+            max_tokens=1024,
+        )
+    except LLMProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chat request failed: {exc}",
+        )
+
+    return schemas.ChatResponse(
+        reply=reply,
+        provider=provider.provider_id,
+        modelName=provider.model_name or None,
+    )
 
 
 @router.post("/holding/{holding_id}", response_model=schemas.StartedRunOut, status_code=202)

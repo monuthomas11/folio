@@ -2,6 +2,8 @@ import type {
   AnalysisRun,
   AnalysisRunDetail,
   AuthUser,
+  ChatRequest,
+  ChatResponse,
   Holding,
   HoldingsInput,
   ImportResult,
@@ -218,6 +220,13 @@ export const api = {
   async updateProfile(input: InvestmentProfileInput): Promise<InvestmentProfile> {
     return request<InvestmentProfile>("/profile", {
       method: "PUT",
+      body: input,
+    });
+  },
+
+  async askAi(input: ChatRequest): Promise<ChatResponse> {
+    return request<ChatResponse>("/analysis/chat", {
+      method: "POST",
       body: input,
     });
   },

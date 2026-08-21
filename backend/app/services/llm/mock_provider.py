@@ -74,6 +74,8 @@ class MockProvider(LLMProvider):
             payload = self._portfolio(full)
         elif "<<AGENT:committee>>" in full:
             payload = self._committee(full)
+        elif "<<AGENT:chat>>" in full:
+            return self._chat(full)
         else:
             payload = {"summary": "Mock provider: unknown agent marker."}
         return json.dumps(payload)
@@ -143,6 +145,33 @@ class MockProvider(LLMProvider):
                 "REBALANCE_BEFORE_ADDING" if flags["concentration"] else "OK_TO_MAINTAIN"
             ),
         }
+
+    def _chat(self, text: str) -> str:
+        context_section = text.split("CONTEXT:")[-1]
+        question = ""
+        if '"user_question": ' in context_section:
+            question = context_section.split('"user_question": ', 1)[1].split("\n", 1)[0]
+            question = question.strip().strip('",')
+        rating = "HOLD"
+        action = "HOLD_MONITOR"
+        symbol = None
+        m = re.search(r'"rating":\s*"([^"]+)"', context_section)
+        if m:
+            rating = m.group(1)
+        m = re.search(r'"action":\s*"([^"]+)"', context_section)
+        if m:
+            action = m.group(1)
+        m = re.search(r'"symbol":\s*"([^"]+)"', context_section)
+        if m:
+            symbol = m.group(1)
+        subject = symbol or "your portfolio"
+        return (
+            f"Here is what the stored analysis says about {subject}: the latest "
+            f"rating is {rating} with action {action}. "
+            "I can only reason from the previously generated analysis and your "
+            "holdings, which is what this answer is based on.\n\n"
+            "This is informational and not personalized investment advice."
+        )
 
     def _committee(self, text: str) -> dict[str, Any]:
         evidence_section = text.split("EVIDENCE:")[-1]

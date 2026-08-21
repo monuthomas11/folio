@@ -196,3 +196,23 @@ export interface EvidenceItem {
   confidence: string;
   note: string | null;
 }
+
+export type ChatRole = "user" | "assistant";
+
+export interface ChatMessage {
+  role: ChatRole;
+  content: string;
+}
+
+export interface ChatRequest {
+  context: "holding" | "portfolio";
+  holdingId?: string;
+  message: string;
+  history: ChatMessage[];
+}
+
+export interface ChatResponse {
+  reply: string;
+  provider: string;
+  modelName: string | null;
+}

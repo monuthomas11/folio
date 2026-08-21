@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { AnalyzeButton } from "@/components/analysis/analyze-button";
+import { AskAi } from "@/components/analysis/ask-ai";
 import { RatingBadge } from "@/components/analysis/rating-badge";
 import { EvidencePanel } from "@/components/analysis/evidence-panel";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -484,13 +485,21 @@ export default function HoldingDetailPage() {
             {[holding.sector, holding.broker].filter(Boolean).join(" · ") || "NSE listed"}
           </p>
         </div>
-        <AnalyzeButton
-          kind="holding"
-          holdingId={holding.id}
-          disabled={!holding.currentLtp}
-          onComplete={handleComplete}
-          onError={(message) => setError(message)}
-        />
+        <div className={styles.headerActions}>
+          <AskAi
+            context="holding"
+            holdingId={holding.id}
+            enabled={!!rec}
+            label={`Ask about ${holding.symbol}`}
+          />
+          <AnalyzeButton
+            kind="holding"
+            holdingId={holding.id}
+            disabled={!holding.currentLtp}
+            onComplete={handleComplete}
+            onError={(message) => setError(message)}
+          />
+        </div>
       </header>
 
       {error && (

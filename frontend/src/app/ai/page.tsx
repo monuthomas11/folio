@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { AnalyzeButton } from "@/components/analysis/analyze-button";
+import { AskAi } from "@/components/analysis/ask-ai";
 import { RatingBadge } from "@/components/analysis/rating-badge";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -270,11 +271,14 @@ export default function AiPage() {
             investment profile
           </p>
         </div>
-        <AnalyzeButton
-          kind="portfolio"
-          onComplete={handleComplete}
-          onError={(message) => setError(message)}
-        />
+        <div className={styles.headerActions}>
+          <AskAi context="portfolio" enabled={!!data} />
+          <AnalyzeButton
+            kind="portfolio"
+            onComplete={handleComplete}
+            onError={(message) => setError(message)}
+          />
+        </div>
       </header>
 
       {error && (
