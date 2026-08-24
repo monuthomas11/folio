@@ -20,6 +20,7 @@ class GeminiProvider(LLMProvider):
         user: str,
         temperature: float = 0.2,
         max_tokens: int = 2048,
+        json_mode: bool = True,
     ) -> str:
         payload = {
             "contents": [
@@ -31,9 +32,10 @@ class GeminiProvider(LLMProvider):
             "generationConfig": {
                 "temperature": temperature,
                 "maxOutputTokens": max_tokens,
-                "responseMimeType": "application/json",
             },
         }
+        if json_mode:
+            payload["generationConfig"]["responseMimeType"] = "application/json"
         url = f"{BASE_URL}/{self.model_name}:generateContent?key={self.api_key}"
         try:
             async with httpx.AsyncClient(timeout=90.0) as client:

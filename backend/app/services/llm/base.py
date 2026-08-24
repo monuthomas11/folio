@@ -83,6 +83,7 @@ class LLMProvider(ABC):
                     user=user_prompt,
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    json_mode=True,
                 )
                 return extract_json(raw)
             except LLMProviderError as exc:
@@ -109,5 +110,6 @@ class LLMProvider(ABC):
         user: str,
         temperature: float = 0.2,
         max_tokens: int = 2048,
+        json_mode: bool = True,
     ) -> str:
         raise NotImplementedError

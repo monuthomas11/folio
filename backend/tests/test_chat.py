@@ -5,14 +5,23 @@ import pytest
 
 from .conftest import auth_headers
 
-from app.services.analysis import orchestrator
+from app.services.analysis import chat, orchestrator
 from app.services.fundamentals.base import FundamentalsSnapshot
-from app.services.market_data.base import OHLCV
+from app.services.market_data.base import NewsItem, OHLCV
 
 
 class FakeMarketData:
     def get_ltp(self, symbol: str) -> float:
         return 110.0
+
+    def get_news(self, symbol: str, limit: int = 6) -> list[NewsItem]:
+        return [
+            NewsItem(
+                title=f"{symbol} posts strong quarterly results",
+                publisher="TestWire",
+                summary="Revenues and margins improved sequentially.",
+            )
+        ]
 
     def get_ohlcv(self, symbol: str, period: str = "1y") -> list[OHLCV]:
         bars = []
@@ -68,6 +77,8 @@ class FakeFundamentals:
 def _fake_providers(monkeypatch):
     monkeypatch.setattr(orchestrator, "MARKET_DATA", FakeMarketData())
     monkeypatch.setattr(orchestrator, "FUNDAMENTALS", FakeFundamentals())
+    monkeypatch.setattr(chat, "MARKET_DATA", FakeMarketData())
+    monkeypatch.setattr(chat, "FUNDAMENTALS", FakeFundamentals())
     yield
 
 
@@ -194,6 +205,7 @@ def test_chat_holding_reply_shape(client):
     assert "reply" in body and body["reply"]
     assert body["provider"] == "mock"
     assert body["modelName"] == "mock-analyzer-v1"
+    assert not body["reply"].lstrip().startswith("{")
 
 
 def test_chat_portfolio_reply_shape(client):

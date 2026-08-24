@@ -4,6 +4,10 @@ import json
 from pathlib import Path
 
 from ... import models
+from ..fundamentals.base import FundamentalsProvider, FundamentalsSnapshot
+from ..fundamentals.yfinance_provider import YFinanceFundamentalsProvider
+from ..market_data.base import MarketDataProvider
+from ..market_data.yfinance_provider import YFinanceMarketDataProvider
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent.parent / "prompts"
 
@@ -11,6 +15,10 @@ MAX_HISTORY = 10
 MAX_MESSAGE_CHARS = 2000
 MAX_CONTEXT_CHARS = 14000
 MAX_EVIDENCE_ITEMS = 20
+MAX_NEWS_ITEMS = 5
+
+FUNDAMENTALS: FundamentalsProvider = YFinanceFundamentalsProvider()
+MARKET_DATA: MarketDataProvider = YFinanceMarketDataProvider()
 
 _system_cache: dict[str, str] | None = None
 
@@ -118,6 +126,70 @@ def _recommendation_dict(
     }
 
 
+def _fundamentals_dict(fund: FundamentalsSnapshot) -> dict:
+    if fund is None:
+        return {"available": False}
+    return {
+        "available": True,
+        "company_name": fund.company_name,
+        "sector": fund.sector,
+        "industry": fund.industry,
+        "market_cap": fund.market_cap,
+        "currency": fund.currency,
+        "pe_trailing": _rounded(fund.pe_trailing),
+        "pe_forward": _rounded(fund.pe_forward),
+        "pb": _rounded(fund.pb),
+        "ev_to_ebitda": _rounded(fund.ev_to_ebitda),
+        "dividend_yield": _rounded(fund.dividend_yield, 4),
+        "peg": _rounded(fund.peg),
+        "roe": _rounded(fund.roe, 4),
+        "net_profit_margin": _rounded(fund.net_profit_margin, 4),
+        "operating_margin": _rounded(fund.operating_margin, 4),
+        "revenue_growth": _rounded(fund.revenue_growth, 4),
+        "earnings_growth": _rounded(fund.earnings_growth, 4),
+        "debt_to_equity": _rounded(fund.debt_to_equity),
+        "current_ratio": _rounded(fund.current_ratio),
+        "total_cash": fund.total_cash,
+        "total_debt": fund.total_debt,
+        "free_cashflow": fund.free_cashflow,
+        "operating_cashflow": fund.operating_cashflow,
+        "fifty_two_week_high": fund.fifty_two_week_high,
+        "fifty_two_week_low": fund.fifty_two_week_low,
+        "beta": _rounded(fund.beta),
+        "source": fund.source,
+        "observed_at": fund.observed_at.isoformat() if fund.observed_at else None,
+    }
+
+
+def _news_dict(symbol: str) -> list[dict]:
+    try:
+        items = MARKET_DATA.get_news(symbol, limit=MAX_NEWS_ITEMS)
+    except Exception:
+        return []
+    return [
+        {
+            "title": item.title,
+            "publisher": item.publisher,
+            "link": item.link,
+            "published_at": item.published_at,
+            "summary": item.summary,
+        }
+        for item in items
+    ]
+
+
+def fetch_live_research(symbol: str) -> dict:
+    try:
+        fund = FUNDAMENTALS.get_snapshot(symbol)
+    except Exception:
+        fund = None
+    return {
+        "symbol": symbol,
+        "fundamentals": _fundamentals_dict(fund),
+        "news": _news_dict(symbol),
+    }
+
+
 def build_holding_chat_context(
     holding: models.Holding,
     rec: models.Recommendation,
@@ -143,6 +215,7 @@ def build_holding_chat_context(
             ][:10],
         },
         "investment_profile": _profile_dict(profile),
+        "live_research": fetch_live_research(holding.symbol),
     }
 
 
@@ -166,6 +239,17 @@ def build_portfolio_chat_context(
                 "position": _position_snapshot(matching) if matching else None,
             }
         )
+    symbols: list[str] = []
+    for rec in holding_recs:
+        if rec.symbol not in symbols:
+            symbols.append(rec.symbol)
+        if len(symbols) >= 5:
+            break
+
+    live_research = [
+        fetch_live_research(symbol) for symbol in symbols
+    ]
+
     return {
         "mode": "portfolio",
         "portfolio_recommendation": (
@@ -175,6 +259,7 @@ def build_portfolio_chat_context(
         ),
         "holdings": rows[:25],
         "investment_profile": _profile_dict(profile),
+        "live_research": live_research,
     }
 
 

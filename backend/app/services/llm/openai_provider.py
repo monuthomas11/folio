@@ -23,6 +23,7 @@ class OpenAIProvider(LLMProvider):
         user: str,
         temperature: float = 0.2,
         max_tokens: int = 2048,
+        json_mode: bool = True,
     ) -> str:
         payload: dict = {
             "model": self.model_name,
@@ -33,7 +34,7 @@ class OpenAIProvider(LLMProvider):
                 {"role": "user", "content": user},
             ],
         }
-        if not JSON_MODE_DISABLED:
+        if json_mode and not JSON_MODE_DISABLED:
             payload["response_format"] = {"type": "json_object"}
 
         url = f"{self.base_url}/chat/completions"

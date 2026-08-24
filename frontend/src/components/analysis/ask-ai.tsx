@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { api, ApiError } from "@/lib/api";
 import { IconClose, IconSend, IconSparkles } from "@/components/icons";
 import type { ChatMessage } from "@/lib/types";
@@ -162,7 +163,7 @@ export function AskAi({ context, holdingId, label, enabled }: AskAiProps) {
                 </span>
                 <div>
                   <h2 className={styles.drawerHeading}>{drawerTitle}</h2>
-                  <p className={styles.drawerSub}>Grounded in your stored analysis and holdings</p>
+                  <p className={styles.drawerSub}>Live fundamentals, news and your stored analysis</p>
                 </div>
               </div>
               <button type="button" className={styles.close} onClick={() => setOpen(false)} aria-label="Close Ask AI">
@@ -194,7 +195,7 @@ export function AskAi({ context, holdingId, label, enabled }: AskAiProps) {
                   <p className={styles.emptyTitle}>{enabled ? "Ask about this analysis" : "No analysis yet"}</p>
                   <p className={styles.emptyText}>
                     {enabled
-                      ? "Ask about this analysis — the answers are grounded in the stored analysis and your holdings."
+                      ? "Ask about this analysis — answers combine fresh fundamentals and news with your stored analysis and holdings."
                       : "Run an analysis first to ask questions about this context. The AI answers from the latest recommendation and your positions."}
                   </p>
                 </div>
@@ -202,7 +203,34 @@ export function AskAi({ context, holdingId, label, enabled }: AskAiProps) {
                 messages.map((m, i) => (
                   <div key={i} className={m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}>
                     <span className={styles.bubbleMeta}>{m.role === "user" ? "You" : "AI"}</span>
-                    <p className={styles.bubbleText}>{m.content}</p>
+                    {m.role === "user" ? (
+                      <p className={styles.bubbleText}>{m.content}</p>
+                    ) : (
+                      <div className={`${styles.bubbleText} ${styles.bubbleMarkdown}`}>
+                        <ReactMarkdown
+                          components={{
+                            p: ({ children }) => <p className={styles.mdParagraph}>{children}</p>,
+                            ul: ({ children }) => <ul className={styles.mdList}>{children}</ul>,
+                            ol: ({ children }) => <ol className={styles.mdList}>{children}</ol>,
+                            li: ({ children }) => <li className={styles.mdListItem}>{children}</li>,
+                            h1: ({ children }) => <h1 className={styles.mdHeading}>{children}</h1>,
+                            h2: ({ children }) => <h2 className={styles.mdHeading}>{children}</h2>,
+                            h3: ({ children }) => <h3 className={styles.mdHeading}>{children}</h3>,
+                            h4: ({ children }) => <h4 className={styles.mdHeading}>{children}</h4>,
+                            strong: ({ children }) => <strong className={styles.mdStrong}>{children}</strong>,
+                            em: ({ children }) => <em className={styles.mdEm}>{children}</em>,
+                            a: ({ href, children }) => (
+                              <a className={styles.mdLink} href={href} target="_blank" rel="noopener noreferrer">
+                                {children}
+                              </a>
+                            ),
+                            code: ({ children }) => <code className={styles.mdCode}>{children}</code>,
+                          }}
+                        >
+                          {m.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 ))
               )}

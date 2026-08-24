@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -164,7 +165,9 @@ async def ask_ai_chat(
         profile = db.get(models.InvestmentProfile, user.id)
         if profile is None:
             profile = models.InvestmentProfile(user_id=user.id)
-        context = build_holding_chat_context(holding, rec, holdings, profile)
+        context = await asyncio.to_thread(
+            build_holding_chat_context, holding, rec, holdings, profile
+        )
     else:
         portfolio_rec = db.scalar(
             select(models.Recommendation)
@@ -199,8 +202,12 @@ async def ask_ai_chat(
         profile = db.get(models.InvestmentProfile, user.id)
         if profile is None:
             profile = models.InvestmentProfile(user_id=user.id)
-        context = build_portfolio_chat_context(
-            portfolio_rec, list(latest_by_symbol.values()), holdings, profile
+        context = await asyncio.to_thread(
+            build_portfolio_chat_context,
+            portfolio_rec,
+            list(latest_by_symbol.values()),
+            holdings,
+            profile,
         )
 
     prompt = render_chat_prompt(context, history, payload.message)
@@ -210,6 +217,7 @@ async def ask_ai_chat(
             user=prompt,
             temperature=0.4,
             max_tokens=1024,
+            json_mode=False,
         )
     except LLMProviderError as exc:
         raise HTTPException(

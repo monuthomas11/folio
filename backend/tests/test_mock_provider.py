@@ -2,7 +2,6 @@ import asyncio
 
 from app.services.analysis.prompts import render_agent_prompt
 from app.services.llm.mock_provider import MockProvider
-
 EVIDENCE_PACK = {
     "security": {"symbol": "TEST", "sector": "IT", "broker": None},
     "position": {
@@ -101,3 +100,18 @@ def test_mock_committee_portfolio_schema():
     assert "concerns" in out
     assert "priority" in out
     assert "stock_actions" in out
+
+
+def test_mock_chat_returns_plain_text():
+    provider = MockProvider()
+    prompt = (
+        "system\n<<AGENT:chat>>\n"
+        'CONTEXT: {"symbol": "HDFCBANK", "rating": "HOLD", '
+        '"action": "HOLD_MONITOR", "user_question": "Will it recover?"}'
+    )
+    reply = asyncio.run(
+        provider.generate_text("system", prompt, json_mode=False)
+    )
+    assert isinstance(reply, str)
+    assert not reply.lstrip().startswith("{")
+    assert "HOLD" in reply

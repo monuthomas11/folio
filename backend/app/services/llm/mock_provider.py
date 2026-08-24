@@ -64,6 +64,7 @@ class MockProvider(LLMProvider):
         user: str,
         temperature: float = 0.2,
         max_tokens: int = 2048,
+        json_mode: bool = True,
     ) -> str:
         full = f"{system}\n{user}"
         if "<<AGENT:fundamental>>" in full:
@@ -168,8 +169,9 @@ class MockProvider(LLMProvider):
         return (
             f"Here is what the stored analysis says about {subject}: the latest "
             f"rating is {rating} with action {action}. "
-            "I can only reason from the previously generated analysis and your "
-            "holdings, which is what this answer is based on.\n\n"
+            "This answer is based on the previously generated analysis, your "
+            "holdings, and any live fundamentals/news provided in the research "
+            "context.\n\n"
             "This is informational and not personalized investment advice."
         )
 
