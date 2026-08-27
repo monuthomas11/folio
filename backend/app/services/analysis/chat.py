@@ -268,12 +268,24 @@ def render_chat_prompt(
     history: list[dict],
     question: str,
 ) -> str:
-    payload = {
-        "context": context,
-        "history": history[-MAX_HISTORY:],
-        "user_question": question,
-    }
-    serialized = json.dumps(payload, indent=2, default=str)
-    if len(serialized) > MAX_CONTEXT_CHARS:
-        serialized = serialized[:MAX_CONTEXT_CHARS] + "\n... (truncated)"
-    return load_chat_prompt() + "\n\nCONTEXT:\n" + serialized
+    serialized_context = json.dumps(context, indent=2, default=str)
+    if len(serialized_context) > MAX_CONTEXT_CHARS:
+        serialized_context = (
+            serialized_context[:MAX_CONTEXT_CHARS] + "\n... (context truncated)"
+        )
+    conversation = json.dumps(
+        {
+            "history": history[-MAX_HISTORY:],
+            "user_question": question,
+        },
+        indent=2,
+        default=str,
+    )
+    return (
+        load_chat_prompt()
+        + "\n\nANALYSIS_CONTEXT:\n"
+        + serialized_context
+        + "\n\nLATEST_CONVERSATION:\n"
+        + conversation
+        + "\n\nAnswer ONLY the user_question in LATEST_CONVERSATION."
+    )

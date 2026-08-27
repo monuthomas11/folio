@@ -148,11 +148,19 @@ class MockProvider(LLMProvider):
         }
 
     def _chat(self, text: str) -> str:
-        context_section = text.split("CONTEXT:")[-1]
+        context_section = text.split("ANALYSIS_CONTEXT:", 1)[-1]
+        conversation_section = context_section
+        if "LATEST_CONVERSATION:" in context_section:
+            context_section, conversation_section = context_section.split(
+                "LATEST_CONVERSATION:", 1
+            )
         question = ""
-        if '"user_question": ' in context_section:
-            question = context_section.split('"user_question": ', 1)[1].split("\n", 1)[0]
-            question = question.strip().strip('",')
+        try:
+            question = json.loads(conversation_section).get("user_question", "")
+        except json.JSONDecodeError:
+            if '"user_question": ' in conversation_section:
+                question = conversation_section.split('"user_question": ', 1)[1].split("\n", 1)[0]
+                question = question.strip().strip('\",')
         rating = "HOLD"
         action = "HOLD_MONITOR"
         symbol = None
@@ -166,12 +174,28 @@ class MockProvider(LLMProvider):
         if m:
             symbol = m.group(1)
         subject = symbol or "your portfolio"
+        lower_question = question.lower()
+        if "uptrend" in lower_question or "profit" in lower_question:
+            return (
+                f"It may recover, but the stored analysis does not confirm that "
+                f"{subject} has returned to an uptrend. The current signal is "
+                f"{rating} / {action}, so look for the stated trend-reversal trigger "
+                "before assuming a profitable recovery. A loss can also deepen if "
+                "the downside trigger is reached.\n\n"
+                "This is informational and not personalized investment advice."
+            )
+        if "rating" in lower_question or "recommend" in lower_question:
+            return (
+                f"The latest stored view for {subject} is {rating} with action "
+                f"{action}. That is the recommendation to understand first; the "
+                "supporting analysis and data quality should determine whether it "
+                "still fits your plan.\n\n"
+                "This is informational and not personalized investment advice."
+            )
         return (
-            f"Here is what the stored analysis says about {subject}: the latest "
-            f"rating is {rating} with action {action}. "
-            "This answer is based on the previously generated analysis, your "
-            "holdings, and any live fundamentals/news provided in the research "
-            "context.\n\n"
+            f"For {subject}, the latest stored view is {rating} with action {action}. "
+            f"Your question was: \"{question}\". The answer should be guided by "
+            "that recommendation, the holding data, and the available research.\n\n"
             "This is informational and not personalized investment advice."
         )
 

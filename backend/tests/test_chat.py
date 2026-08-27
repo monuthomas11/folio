@@ -206,6 +206,37 @@ def test_chat_holding_reply_shape(client):
     assert body["provider"] == "mock"
     assert body["modelName"] == "mock-analyzer-v1"
     assert not body["reply"].lstrip().startswith("{")
+    assert "Here is what the stored analysis says" not in body["reply"]
+
+
+def test_chat_answers_question_conversationally(client):
+    token = _register(client)
+    headers = auth_headers(token)
+    holding = _add_holding(client, headers)
+    _run_holding_analysis(client, headers, holding["id"])
+    r = _chat(
+        client,
+        headers,
+        {
+            "context": "holding",
+            "holdingId": holding["id"],
+            "message": "Would it go back to uptrend and can I make profit?",
+        },
+    )
+    assert r.status_code == 200
+    reply = r.json()["reply"]
+    assert "It may recover" in reply
+    assert "Current Position" not in reply
+
+
+def test_render_chat_prompt_preserves_question_when_context_is_large():
+    question = "Would it go back to uptrend and can I make profit?"
+    prompt = chat.render_chat_prompt(
+        {"large": "x" * chat.MAX_CONTEXT_CHARS}, [], question
+    )
+    assert question in prompt
+    assert "LATEST_CONVERSATION" in prompt
+    assert "Answer ONLY the user_question" in prompt
 
 
 def test_chat_portfolio_reply_shape(client):
