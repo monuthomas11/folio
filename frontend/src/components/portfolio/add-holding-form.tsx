@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Holding, HoldingsInput } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import styles from "./add-holding-form.module.css";
@@ -44,6 +44,22 @@ export function AddHoldingForm({
   const [form, setForm] = useState<HoldingsInput>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const prefillApplied = useRef(false);
+
+  useEffect(() => {
+    if (editing || prefillApplied.current || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const prefilledSymbol = params.get("symbol");
+    if (!prefilledSymbol) return;
+    prefillApplied.current = true;
+    setForm((current) => ({
+      ...current,
+      symbol: prefilledSymbol.toUpperCase(),
+      stopLoss: params.has("stopLoss") ? Number(params.get("stopLoss")) : null,
+      targetPrice: params.has("targetPrice") ? Number(params.get("targetPrice")) : null,
+    }));
+    setOpen(true);
+  }, [editing]);
 
   useEffect(() => {
     if (editing) {

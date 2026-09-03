@@ -13,6 +13,8 @@ import type {
   PortfolioAlert,
   PortfolioSnapshot,
   Recommendation,
+  WatchlistInput,
+  WatchlistItem,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -229,6 +231,30 @@ export const api = {
       method: "POST",
       body: input,
     });
+  },
+
+  async getWatchlist(): Promise<WatchlistItem[]> {
+    return request<WatchlistItem[]>("/watchlist");
+  },
+
+  async addWatchlistItem(input: WatchlistInput): Promise<WatchlistItem> {
+    return request<WatchlistItem>("/watchlist", { method: "POST", body: input });
+  },
+
+  async updateWatchlistItem(id: string, input: WatchlistInput): Promise<WatchlistItem> {
+    return request<WatchlistItem>(`/watchlist/${id}`, { method: "PUT", body: input });
+  },
+
+  async deleteWatchlistItem(id: string): Promise<void> {
+    return request<void>(`/watchlist/${id}`, { method: "DELETE" });
+  },
+
+  async refreshWatchlist(): Promise<WatchlistItem[]> {
+    return request<WatchlistItem[]>("/watchlist/fetch-all", { method: "POST" });
+  },
+
+  async refreshWatchlistSymbol(symbol: string): Promise<void> {
+    await request(`/watchlist/fetch-price/${encodeURIComponent(symbol)}`, { method: "POST" });
   },
 };
 

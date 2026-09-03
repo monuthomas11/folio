@@ -1,0 +1,26 @@
+.trigger { margin-bottom: var(--space-6); }
+.form { padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.formHeader, .levelHeader, .actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.formHeader { margin-bottom: var(--space-5); }
+.formTitle { color: var(--ink-strong); font-size: var(--text-md); font-weight: 650; }
+.formHint, .levelHint { margin-top: 3px; color: var(--muted); font-size: var(--text-xs); }
+.close, .remove { display: grid; place-items: center; padding: 5px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--muted); cursor: pointer; }
+.close:hover, .remove:hover { background: var(--surface-2); color: var(--ink); }
+.itemFields { display: grid; grid-template-columns: minmax(9rem, .35fr) minmax(15rem, 1fr); gap: var(--space-4); }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.label { color: var(--muted); font-size: var(--text-2xs); font-weight: 650; letter-spacing: .03em; text-transform: uppercase; }
+.optional { color: var(--faint); font-weight: 500; text-transform: none; letter-spacing: 0; }
+.input, .textarea { width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg); padding: 0 var(--space-3); font-size: var(--text-sm); outline: 0; }
+.input { height: 38px; }
+.textarea { min-height: 38px; padding-top: 9px; padding-bottom: 9px; resize: vertical; }
+.input:focus, .textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint); }
+.levelHeader { margin: var(--space-6) 0 var(--space-3); }
+.levelTitle { color: var(--ink-strong); font-size: var(--text-sm); font-weight: 650; }
+.levelList { display: flex; flex-direction: column; gap: var(--space-3); }
+.levelRow { display: grid; grid-template-columns: 1fr 1.25fr 1fr 1fr auto; gap: var(--space-3); align-items: end; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+.noLevels { padding: var(--space-4); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--muted); font-size: var(--text-sm); }
+.remove { margin-bottom: 7px; }
+.error { margin-top: var(--space-4); color: var(--loss); font-size: var(--text-sm); }
+.actions { justify-content: flex-end; margin-top: var(--space-5); }
+@media (max-width: 760px) { .form { padding: var(--space-4); } .itemFields, .levelRow { grid-template-columns: 1fr 1fr; } .notesField { grid-column: 1 / -1; } .remove { justify-self: end; margin: 0; } }
+@media (max-width: 480px) { .itemFields, .levelRow { grid-template-columns: 1fr; } .notesField { grid-column: auto; } .levelHeader { align-items: flex-start; } }

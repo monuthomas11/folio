@@ -26,12 +26,15 @@ def list_alerts(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    query = select(models.Alert).where(models.Alert.user_id == user.id)
+    holding_query = select(models.Alert).where(models.Alert.user_id == user.id)
+    watchlist_query = select(models.WatchlistAlert).where(
+        models.WatchlistAlert.user_id == user.id
+    )
     if not include_dismissed:
-        query = query.where(models.Alert.dismissed.is_(False))
-    return db.scalars(
-        query.order_by(models.Alert.created_at.desc())
-    ).all()
+        holding_query = holding_query.where(models.Alert.dismissed.is_(False))
+        watchlist_query = watchlist_query.where(models.WatchlistAlert.dismissed.is_(False))
+    alerts = list(db.scalars(holding_query).all()) + list(db.scalars(watchlist_query).all())
+    return sorted(alerts, key=lambda alert: alert.created_at, reverse=True)
 
 
 @router.put("/{alert_id}/dismiss", response_model=schemas.AlertOut)
@@ -47,10 +50,14 @@ def dismiss_alert(
         )
     )
     if alert is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Alert not found",
+        alert = db.scalar(
+            select(models.WatchlistAlert).where(
+                models.WatchlistAlert.id == _coerce_uuid(alert_id),
+                models.WatchlistAlert.user_id == user.id,
+            )
         )
+    if alert is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
     alert.dismissed = True
     db.commit()
     db.refresh(alert)

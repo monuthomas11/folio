@@ -38,6 +38,14 @@ export function IconBriefcase(props: IconProps) {
   );
 }
 
+export function IconBookmark(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17l-6-3.5L6 21V4z" />
+    </svg>
+  );
+}
+
 export function IconBell(props: IconProps) {
   return (
     <svg {...base(props)}>

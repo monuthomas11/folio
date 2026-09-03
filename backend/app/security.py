@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
+import secrets
 from typing import Any
 import uuid
 
 import bcrypt
 import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import models
@@ -13,6 +16,8 @@ from .config import settings
 from .database import get_db
 
 security = HTTPBearer(auto_error=False)
+external_api_key_header = APIKeyHeader(name="X-Folio-API-Key", auto_error=False)
+EXTERNAL_KEY_PREFIX = "folio_wk_"
 
 
 def hash_password(password: str) -> str:
@@ -27,6 +32,51 @@ def verify_password(password: str, password_hash: str) -> bool:
         )
     except ValueError:
         return False
+
+
+def create_api_key() -> tuple[str, str, str]:
+    key = f"{EXTERNAL_KEY_PREFIX}{secrets.token_urlsafe(32)}"
+    return key, key[:16], hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+def hash_api_key(key: str) -> str:
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+def get_external_api_user(
+    request: Request,
+    api_key: str | None = Depends(external_api_key_header),
+    db: Session = Depends(get_db),
+) -> models.User:
+    from .services.api_rate_limiter import get_external_api_rate_limiter
+
+    client_host = request.client.host if request.client else "unknown"
+    limiter = get_external_api_rate_limiter()
+    limiter.check(f"ip:{client_host}")
+    if not api_key or not api_key.startswith(EXTERNAL_KEY_PREFIX):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    key_hash = hash_api_key(api_key)
+    stored = db.scalar(
+        select(models.APIKey).where(
+            models.APIKey.key_prefix == api_key[:16],
+            models.APIKey.key_hash == key_hash,
+            models.APIKey.revoked_at.is_(None),
+        )
+    )
+    if stored is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    limiter.check(f"key:{key_hash}")
+    stored.last_used_at = datetime.now(timezone.utc)
+    db.commit()
+    return stored.user
 
 
 def create_access_token(user_id: str, expires_minutes: int | None = None) -> str:

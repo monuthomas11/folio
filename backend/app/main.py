@@ -1,12 +1,13 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .config import settings
 from .database import Base, engine, get_db
-from .routers import alerts, analysis, auth, holdings
+from .routers import alerts, analysis, auth, holdings, integrations, watchlist
 from .security import get_current_user
 
 
@@ -50,9 +51,33 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        if request.url.path.startswith("/api/v1/"):
+            content_length = request.headers.get("content-length")
+            if content_length:
+                try:
+                    too_large = int(content_length) > settings.external_api_max_body_bytes
+                except ValueError:
+                    too_large = True
+                if too_large:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"detail": "Request body is too large"},
+                    )
+        response: Response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        if request.url.path.startswith("/api/v1/"):
+            response.headers.setdefault("Cache-Control", "no-store")
+            response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+        return response
+
     app.include_router(auth.router)
     app.include_router(holdings.router)
     app.include_router(alerts.router)
+    app.include_router(watchlist.router)
+    app.include_router(integrations.router)
     app.include_router(analysis.router)
     app.include_router(analysis.profile_router)
 
@@ -74,6 +99,12 @@ def create_app() -> FastAPI:
             select(models.Alert).where(
                 models.Alert.user_id == user.id,
                 models.Alert.dismissed.is_(False),
+            )
+        ).all()
+        active_watchlist_alerts = db.scalars(
+            select(models.WatchlistAlert).where(
+                models.WatchlistAlert.user_id == user.id,
+                models.WatchlistAlert.dismissed.is_(False),
             )
         ).all()
 
@@ -104,12 +135,16 @@ def create_app() -> FastAPI:
                 total_pnl=round(total_pnl, 2),
                 total_pnl_pct=round(total_pnl_pct, 2),
                 holding_count=holding_count,
-                active_alert_count=len(active_alerts),
+                active_alert_count=len(active_alerts) + len(active_watchlist_alerts),
                 gainers=gainers,
                 losers=losers,
             ),
             holdings=holdings,
-            alerts=active_alerts,
+            alerts=sorted(
+                [*active_alerts, *active_watchlist_alerts],
+                key=lambda alert: alert.created_at,
+                reverse=True,
+            ),
         )
 
     return app

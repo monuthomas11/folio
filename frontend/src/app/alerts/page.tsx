@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { AlertsStrip } from "@/components/dashboard/alerts-strip";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,13 +77,20 @@ export default function AlertsPage() {
               </div>
               <ul className={styles.archiveList}>
                 {dismissedAlerts.map((alert) => {
-                  const isSl = alert.kind === "sl-hit";
+                  const isRisk = alert.kind === "sl-hit" || alert.kind === "stop-loss-hit" || alert.kind === "invalidation-hit";
+                  const label = alert.kind === "entry-reached"
+                    ? "Entry reached"
+                    : alert.kind === "target-reached" || alert.kind === "target-hit"
+                      ? "Target reached"
+                      : alert.kind === "invalidation-hit"
+                        ? "Invalidation hit"
+                        : "Stop-loss hit";
                   return (
                     <li key={alert.id} className={styles.archiveItem}>
                       <div>
-                        <span className={styles.archiveSymbol}>{alert.symbol}</span>
-                        <span className={`${styles.archiveKind} ${isSl ? styles.kindSl : styles.kindTarget}`}>
-                          {isSl ? "Stop-loss hit" : "Target reached"}
+                        <Link className={styles.archiveSymbol} href={alert.watchlistItemId ? "/watchlist" : alert.holdingId ? `/holdings/${alert.holdingId}` : "/alerts"}>{alert.symbol}</Link>
+                        <span className={`${styles.archiveKind} ${isRisk ? styles.kindSl : styles.kindTarget}`}>
+                          {label}
                         </span>
                       </div>
                       <span className={styles.archiveMeta}>

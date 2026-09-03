@@ -10,6 +10,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -37,6 +38,15 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     alerts: Mapped[list["Alert"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    watchlist_items: Mapped[list["WatchlistItem"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    watchlist_alerts: Mapped[list["WatchlistAlert"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    api_keys: Mapped[list["APIKey"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -84,6 +94,106 @@ class Alert(Base):
 
     user: Mapped[User] = relationship(back_populates="alerts")
     holding: Mapped[Holding] = relationship(back_populates="alerts")
+
+
+class WatchlistItem(Base):
+    __tablename__ = "watchlist_items"
+    __table_args__ = (UniqueConstraint("user_id", "symbol", name="uq_watchlist_user_symbol"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(20))
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_ltp: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
+    last_updated: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="watchlist_items")
+    levels: Mapped[list["WatchlistLevel"]] = relationship(
+        back_populates="watchlist_item", cascade="all, delete-orphan", order_by="WatchlistLevel.sort_order"
+    )
+    alerts: Mapped[list["WatchlistAlert"]] = relationship(
+        back_populates="watchlist_item", cascade="all, delete-orphan"
+    )
+
+
+class WatchlistLevel(Base):
+    __tablename__ = "watchlist_levels"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    watchlist_item_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("watchlist_items.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    label: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    lower_price: Mapped[float] = mapped_column(Numeric(12, 4))
+    upper_price: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    condition_met: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    watchlist_item: Mapped[WatchlistItem] = relationship(back_populates="levels")
+    alerts: Mapped[list["WatchlistAlert"]] = relationship(
+        back_populates="watchlist_level", cascade="all, delete-orphan"
+    )
+
+
+class WatchlistAlert(Base):
+    __tablename__ = "watchlist_alerts"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    watchlist_item_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("watchlist_items.id", ondelete="CASCADE"), index=True
+    )
+    watchlist_level_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("watchlist_levels.id", ondelete="CASCADE"), index=True
+    )
+    symbol: Mapped[str] = mapped_column(String(20))
+    kind: Mapped[str] = mapped_column(String(30))
+    price: Mapped[float] = mapped_column(Numeric(12, 4))
+    message: Mapped[str] = mapped_column(Text)
+    dismissed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="watchlist_alerts")
+    watchlist_item: Mapped[WatchlistItem] = relationship(back_populates="alerts")
+    watchlist_level: Mapped[WatchlistLevel] = relationship(back_populates="alerts")
+
+
+class APIKey(Base):
+    __tablename__ = "api_keys"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    key_prefix: Mapped[str] = mapped_column(String(20), index=True)
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="api_keys")
 
 
 class AnalysisRun(Base):

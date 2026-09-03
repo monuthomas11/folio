@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
   IconBell,
+  IconBookmark,
   IconBriefcase,
   IconClose,
   IconGrid,
@@ -30,6 +31,7 @@ interface AppShellProps {
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: IconGrid },
   { href: "/portfolio", label: "Portfolio", icon: IconBriefcase },
+  { href: "/watchlist", label: "Watchlist", icon: IconBookmark },
   { href: "/alerts", label: "Alerts", icon: IconBell },
   { href: "/ai", label: "AI Advisor", icon: IconSparkles },
 ] satisfies NavItem[];

@@ -1,6 +1,12 @@
 export type HoldingStatus = "healthy" | "near-sl" | "sl-hit" | "target-hit";
 
-export type AlertKind = "sl-hit" | "target-hit";
+export type AlertKind =
+  | "sl-hit"
+  | "target-hit"
+  | "entry-reached"
+  | "target-reached"
+  | "stop-loss-hit"
+  | "invalidation-hit";
 
 export interface AuthUser {
   id: string;
@@ -23,10 +29,13 @@ export interface Holding {
 
 export interface PortfolioAlert {
   id: string;
-  holdingId: string;
+  holdingId: string | null;
+  watchlistItemId: string | null;
+  watchlistLevelId: string | null;
   symbol: string;
   kind: AlertKind;
   price: number;
+  message: string | null;
   createdAt: string;
   dismissed: boolean;
 }
@@ -56,6 +65,44 @@ export interface PortfolioSnapshot {
   summary: PortfolioSummary;
   holdings: Holding[];
   alerts: PortfolioAlert[];
+}
+
+export type WatchlistLevelKind = "entry" | "target" | "stop-loss" | "invalidation";
+
+export interface WatchlistLevel {
+  id: string;
+  kind: WatchlistLevelKind;
+  label: string | null;
+  lowerPrice: number;
+  upperPrice: number | null;
+  sortOrder: number;
+  conditionMet: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WatchlistLevelInput {
+  kind: WatchlistLevelKind;
+  label: string | null;
+  lowerPrice: number;
+  upperPrice: number | null;
+}
+
+export interface WatchlistItem {
+  id: string;
+  symbol: string;
+  notes: string | null;
+  currentLtp: number | null;
+  lastUpdated: string | null;
+  createdAt: string;
+  updatedAt: string;
+  levels: WatchlistLevel[];
+}
+
+export interface WatchlistInput {
+  symbol: string;
+  notes: string | null;
+  levels: WatchlistLevelInput[];
 }
 
 export interface ImportRowError {
