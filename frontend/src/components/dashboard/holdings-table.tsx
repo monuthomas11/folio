@@ -15,6 +15,7 @@ interface HoldingsTableProps {
   onRefreshRow: (symbol: string) => void;
   onEdit?: (holding: Holding) => void;
   onDelete?: (holding: Holding) => void;
+  removingIds?: Set<string>;
   lastUpdated: string | null;
   aiRatings?: Record<string, AnalysisRating>;
 }
@@ -52,6 +53,7 @@ export function HoldingsTable({
   onRefreshRow,
   onEdit,
   onDelete,
+  removingIds,
   lastUpdated,
   aiRatings,
 }: HoldingsTableProps) {
@@ -109,8 +111,8 @@ export function HoldingsTable({
               </th>
               <th scope="col">Status</th>
               <th scope="col">AI</th>
-              <th scope="col">
-                <span className={styles.srOnly}>Actions</span>
+              <th scope="col" className={styles.actionHeader}>
+                Actions
               </th>
             </tr>
           </thead>
@@ -119,6 +121,7 @@ export function HoldingsTable({
               const s = holdingStats(h);
               const meta = STATUS_META[s.status];
               const refreshing = refreshingSymbols.has(h.symbol);
+              const removing = removingIds?.has(h.id) ?? false;
               return (
                 <tr key={h.id}>
                   <td>
@@ -159,7 +162,7 @@ export function HoldingsTable({
                       <span className={styles.aiNone}>—</span>
                     )}
                   </td>
-                  <td>
+                  <td className={styles.actionCell}>
                     <div className={styles.actions}>
                       <Button
                         variant="ghost"
@@ -170,6 +173,7 @@ export function HoldingsTable({
                         title="Edit holding"
                       >
                         <IconPencil width={14} height={14} />
+                        Edit
                       </Button>
                       <Button
                         variant="ghost"
@@ -187,12 +191,15 @@ export function HoldingsTable({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={styles.iconActionDanger}
+                        className={styles.removeAction}
                         onClick={() => onDelete?.(h)}
-                        aria-label={`Delete ${h.symbol}`}
-                        title="Delete holding"
+                        loading={removing}
+                        disabled={removing}
+                        aria-label={`Remove ${h.symbol}`}
+                        title="Remove holding"
                       >
-                        <IconTrash width={14} height={14} />
+                        {!removing && <IconTrash width={14} height={14} />}
+                        {removing ? "Removing" : "Remove"}
                       </Button>
                     </div>
                   </td>
@@ -208,6 +215,7 @@ export function HoldingsTable({
           const s = holdingStats(h);
           const meta = STATUS_META[s.status];
           const refreshing = refreshingSymbols.has(h.symbol);
+          const removing = removingIds?.has(h.id) ?? false;
           return (
             <article key={h.id} className={styles.card}>
               <header className={styles.cardHeader}>
@@ -279,11 +287,15 @@ export function HoldingsTable({
                   <Button
                     variant="secondary"
                     size="sm"
-                    className={styles.iconActionDanger}
+                    className={styles.removeAction}
                     onClick={() => onDelete?.(h)}
-                    aria-label={`Delete ${h.symbol}`}
+                    loading={removing}
+                    disabled={removing}
+                    aria-label={`Remove ${h.symbol}`}
+                    title="Remove holding"
                   >
-                    <IconTrash width={14} height={14} />
+                    {!removing && <IconTrash width={14} height={14} />}
+                    {removing ? "Removing" : "Remove"}
                   </Button>
                   <Link
                     href={`/holdings/${h.id}`}

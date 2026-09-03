@@ -184,7 +184,29 @@
 .actions {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2);
+}
+
+.actionHeader,
+.actionCell {
+  min-width: 238px;
+  position: sticky;
+  right: 0;
+  border-left: 1px solid var(--border);
+}
+
+.actionHeader {
+  z-index: 2;
+}
+
+.actionCell {
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: -8px 0 12px -12px oklch(0.22 0.02 170 / 0.32);
+}
+
+.table tbody tr:hover .actionCell {
+  background: oklch(0.985 0.004 170);
 }
 
 .iconAction {
@@ -204,6 +226,16 @@
 .iconActionDanger:hover:not(:disabled) {
   color: var(--loss);
   background: var(--loss-fill);
+}
+
+.removeAction {
+  color: var(--loss);
+}
+
+.removeAction:hover:not(:disabled) {
+  color: var(--loss);
+  background: var(--loss-fill);
+  border-color: oklch(0.85 0.04 27);
 }
 
 .srOnly {

@@ -17,11 +17,12 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [refreshingSymbols, setRefreshingSymbols] = useState<Set<string>>(new Set());
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Holding | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const data = await api.getSnapshot();
@@ -78,13 +79,27 @@ export default function PortfolioPage() {
 
   const handleDelete = useCallback(
     async (holding: Holding) => {
-      if (!window.confirm(`Delete ${holding.symbol} from your portfolio?`)) return;
+      if (
+        !window.confirm(
+          `Remove ${holding.symbol} from your portfolio? Its saved alerts will also be removed.`,
+        )
+      ) {
+        return;
+      }
+      setError(null);
+      setRemovingIds((prev) => new Set(prev).add(holding.id));
       try {
         await api.deleteHolding(holding.id);
         if (editing?.id === holding.id) setEditing(null);
-        await load();
+        await load(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Couldn't delete the holding.");
+        setError(err instanceof Error ? err.message : "Couldn't remove the holding.");
+      } finally {
+        setRemovingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(holding.id);
+          return next;
+        });
       }
     },
     [load, editing],
@@ -167,6 +182,7 @@ export default function PortfolioPage() {
             onRefreshRow={handleRefreshRow}
             onEdit={setEditing}
             onDelete={handleDelete}
+            removingIds={removingIds}
             lastUpdated={lastUpdated}
             aiRatings={aiRatings}
           />
