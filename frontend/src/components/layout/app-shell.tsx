@@ -138,14 +138,20 @@ export function AppShell({ children, activeAlertCount = 0 }: AppShellProps) {
         {navItems}
       </nav>
 
-      <div className={styles.user}>
-        <span className={styles.avatar} aria-hidden>
-          {initials}
-        </span>
-        <div className={styles.userMeta}>
-          <span className={styles.userName}>{user?.name ?? "Account"}</span>
-          <span className={styles.userEmail}>{user?.email ?? ""}</span>
-        </div>
+      <div className={`${styles.user} ${pathname.startsWith("/profile") ? styles.userActive : ""}`}>
+        <Link
+          href="/profile"
+          className={styles.userProfile}
+          aria-current={pathname.startsWith("/profile") ? "page" : undefined}
+        >
+          <span className={styles.avatar} aria-hidden>
+            {initials}
+          </span>
+          <span className={styles.userMeta}>
+            <span className={styles.userName}>{user?.name ?? "Account"}</span>
+            <span className={styles.userEmail}>{user?.email ?? ""}</span>
+          </span>
+        </Link>
         <button
           type="button"
           className={styles.logout}

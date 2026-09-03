@@ -98,6 +98,13 @@ def test_revoked_api_key_and_rate_limit(client, monkeypatch):
         "/api/v1/watchlist", headers={"X-Folio-API-Key": key}, json={"symbol": "TCS"}
     ).status_code == 401
 
+    assert client.delete(
+        f"/auth/api-keys/{key_id}/permanent", headers=auth_headers(token)
+    ).status_code == 204
+    assert client.delete(
+        f"/auth/api-keys/{key_id}/permanent", headers=auth_headers(token)
+    ).status_code == 404
+
     token = _register(client, "limited@test.com")
     key = client.post(
         "/auth/api-keys", json={"name": "Limited"}, headers=auth_headers(token)
@@ -110,6 +117,33 @@ def test_revoked_api_key_and_rate_limit(client, monkeypatch):
     limited = client.post("/api/v1/watchlist", headers=headers, json={"symbol": "INFY"})
     assert limited.status_code == 429
     assert limited.headers["retry-after"] == "60"
+
+
+def test_active_api_key_must_be_revoked_before_permanent_deletion(client):
+    token = _register(client, "delete-active@test.com")
+    response = client.post(
+        "/auth/api-keys", json={"name": "Delete guard"}, headers=auth_headers(token)
+    )
+    key_id = response.json()["id"]
+    other_token = _register(client, "delete-other@test.com")
+
+    assert client.delete(
+        f"/auth/api-keys/{key_id}/permanent", headers=auth_headers(other_token)
+    ).status_code == 404
+
+    assert client.delete(
+        f"/auth/api-keys/{key_id}/permanent", headers=auth_headers(token)
+    ).status_code == 409
+    assert client.delete(
+        f"/auth/api-keys/{key_id}", headers=auth_headers(token)
+    ).status_code == 204
+    assert client.delete(
+        f"/auth/api-keys/{key_id}/permanent", headers=auth_headers(token)
+    ).status_code == 204
+    assert all(
+        item["id"] != key_id
+        for item in client.get("/auth/api-keys", headers=auth_headers(token)).json()
+    )
 
 
 def test_api_key_is_stored_hashed(client):

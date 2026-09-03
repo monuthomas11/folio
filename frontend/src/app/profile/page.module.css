@@ -1,0 +1,47 @@
+.pageHeader { margin-bottom: var(--space-8); }
+.overline { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); color: var(--muted); font-size: var(--text-2xs); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.overlineDot { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--primary); }
+.pageTitle { color: var(--ink-strong); font-size: var(--text-2xl); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.pageSubtitle { margin-top: 4px; color: var(--muted); font-size: var(--text-sm); }
+.error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); padding: var(--space-3) var(--space-4); border: 1px solid oklch(.85 .04 27); border-radius: var(--radius-md); background: var(--loss-fill); color: var(--loss); font-size: var(--text-sm); }
+.retry { padding: 0; border: 0; background: none; color: inherit; cursor: pointer; font-weight: 650; text-decoration: underline; }
+.accountSection, .apiSection { padding: var(--space-5) var(--space-6); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); }
+.apiSection { margin-top: var(--space-5); }
+.sectionHeader h2 { color: var(--ink-strong); font-size: var(--text-lg); font-weight: 650; }
+.sectionHeader p { margin-top: 3px; color: var(--muted); font-size: var(--text-sm); }
+.sectionEyebrow { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; color: var(--primary-ink); font-size: var(--text-2xs); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
+.accountGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5); margin: var(--space-5) 0 0; padding-top: var(--space-5); border-top: 1px solid var(--border); }
+.accountGrid dt, .label { color: var(--muted); font-size: var(--text-2xs); font-weight: 650; letter-spacing: .05em; text-transform: uppercase; }
+.accountGrid dd { margin-top: 4px; color: var(--ink); font-size: var(--text-sm); }
+.createRow { display: flex; align-items: flex-end; gap: var(--space-3); max-width: 38rem; margin-top: var(--space-5); }
+.field { display: flex; flex: 1; flex-direction: column; gap: 6px; }
+.input { width: 100%; height: 40px; padding: 0 var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg); outline: 0; font-size: var(--text-sm); }
+.input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint); }
+.securityNote { max-width: 68ch; margin-top: var(--space-4); color: var(--muted); font-size: var(--text-xs); }
+.keyList { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border); }
+.listHeader { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-1); }
+.listHeader h3 { color: var(--ink-strong); font-size: var(--text-sm); font-weight: 650; }
+.listHeader span { color: var(--muted); font-size: var(--text-xs); }
+.keyRow { display: flex; align-items: center; gap: var(--space-3); min-height: 70px; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+.keyIcon, .modalIcon { display: grid; flex: none; place-items: center; width: 34px; height: 34px; border-radius: var(--radius-md); background: var(--primary-tint); color: var(--primary); }
+.keyInfo { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.keyInfo strong { overflow: hidden; color: var(--ink-strong); font-size: var(--text-sm); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.keyInfo code { color: var(--muted); font-family: var(--font-sans); font-size: var(--text-xs); }
+.keyInfo span { color: var(--faint); font-size: var(--text-2xs); }
+.status { flex: none; padding: 3px 8px; border-radius: var(--radius-full); font-size: var(--text-2xs); font-weight: 650; }
+.active { background: var(--gain-fill); color: var(--gain); }
+.revoked { background: var(--surface-2); color: var(--muted); }
+.revoke { flex: none; color: var(--loss); }
+.deleteKey { flex: none; color: var(--loss); }
+.empty { padding: var(--space-5) var(--space-3); color: var(--muted); font-size: var(--text-sm); }
+.modalBackdrop { position: fixed; z-index: var(--z-modal); inset: 0; display: grid; place-items: center; padding: var(--space-5); background: oklch(.18 .02 170 / .42); }
+.modal { position: relative; width: min(100%, 32rem); padding: var(--space-8); border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-lg); }
+.modalClose { position: absolute; top: var(--space-4); right: var(--space-4); display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted); cursor: pointer; }
+.modalClose:hover { background: var(--surface-2); color: var(--ink); }
+.modal h2 { margin-top: var(--space-5); color: var(--ink-strong); font-size: var(--text-lg); font-weight: 700; }
+.modal > p { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-sm); }
+.secretBox { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-5); padding: var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg); }
+.secretBox code { min-width: 0; flex: 1; overflow-wrap: anywhere; color: var(--ink-strong); font-family: var(--font-sans); font-size: var(--text-xs); }
+.modalWarning { margin: var(--space-4) 0 var(--space-5); padding: var(--space-3); border-radius: var(--radius-md); background: var(--warn-fill); color: var(--warn); font-size: var(--text-xs); }
+.modalAction { width: 100%; }
+@media (max-width: 600px) { .accountSection, .apiSection { padding: var(--space-4); } .createRow { align-items: stretch; flex-direction: column; max-width: none; } .createRow > button { width: 100%; } .accountGrid { gap: var(--space-3); } .keyRow { align-items: flex-start; flex-wrap: wrap; } .keyInfo { min-width: calc(100% - 50px); } .status { margin-left: 47px; } .revoke, .deleteKey { margin-left: auto; } .modal { padding: var(--space-6); } }

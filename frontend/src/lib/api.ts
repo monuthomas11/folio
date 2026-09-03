@@ -1,6 +1,8 @@
 import type {
   AnalysisRun,
   AnalysisRunDetail,
+  ApiKey,
+  CreatedApiKey,
   AuthUser,
   ChatRequest,
   ChatResponse,
@@ -231,6 +233,25 @@ export const api = {
       method: "POST",
       body: input,
     });
+  },
+
+  async getApiKeys(): Promise<ApiKey[]> {
+    return request<ApiKey[]>("/auth/api-keys");
+  },
+
+  async createApiKey(name: string): Promise<CreatedApiKey> {
+    return request<CreatedApiKey>("/auth/api-keys", {
+      method: "POST",
+      body: { name },
+    });
+  },
+
+  async revokeApiKey(id: string): Promise<void> {
+    return request<void>(`/auth/api-keys/${id}`, { method: "DELETE" });
+  },
+
+  async deleteApiKey(id: string): Promise<void> {
+    return request<void>(`/auth/api-keys/${id}/permanent`, { method: "DELETE" });
   },
 
   async getWatchlist(): Promise<WatchlistItem[]> {

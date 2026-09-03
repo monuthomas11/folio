@@ -27,6 +27,7 @@ All planned watchlist MVP work is implemented and verified.
 - The secure external write integration is implemented: `POST /api/v1/watchlist` uses one-time-disclosed, revocable per-user API keys, strict bounded JSON validation, security headers, and rate limiting.
 - External integration coverage is in `backend/tests/test_external_watchlist_api.py`, including missing/invalid/revoked keys, key hashing, unknown/unsafe/oversized payloads, user scoping, and rate limits.
 - The maintainable integration reference is [Watchlist-API.md](Watchlist-API.md); update it alongside any future endpoint or schema change.
+- Profile API-key management is implemented at `/profile`: create with a name, reveal and copy the raw key once, list masked metadata, revoke active keys, and permanently delete revoked keys.
 
 ## Goal
 
@@ -286,6 +287,7 @@ Not included in this implementation:
 - [x] Update alert UI for watchlist alert kinds.
 - [x] Run backend tests, frontend lint/build, and the Impeccable detector.
 - [x] Review changed files and confirm no secrets or unrelated changes.
+- [x] Add Profile UI for one-time API-key reveal and key management.
 
 ## External API Integration
 
@@ -297,7 +299,7 @@ The watchlist also exposes a server-to-server write API:
 - Success: `201` with the created watchlist item.
 - Duplicate symbol: `409`; malformed, oversized, unsafe-symbol, or unknown fields: `422`/`413`; missing, invalid, or revoked key: `401`; rate limit: `429`.
 
-Create and revoke keys through the authenticated endpoints `POST /auth/api-keys`, `GET /auth/api-keys`, and `DELETE /auth/api-keys/{id}`. The raw key is returned only once when created; only a SHA-256 hash and short prefix are persisted.
+Create, list, revoke, and permanently delete revoked keys through the authenticated endpoints `POST /auth/api-keys`, `GET /auth/api-keys`, `DELETE /auth/api-keys/{id}`, and `DELETE /auth/api-keys/{id}/permanent`. The raw key is returned only once when created; only a SHA-256 hash and short prefix are persisted.
 
 Example:
 

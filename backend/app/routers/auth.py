@@ -121,3 +121,27 @@ def revoke_api_key(
     api_key.revoked_at = datetime.now(timezone.utc)
     db.commit()
     return Response(status_code=204)
+
+
+@router.delete("/api-keys/{key_id}/permanent", status_code=204)
+def delete_revoked_api_key(
+    key_id: str,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    api_key = db.scalar(
+        select(models.APIKey).where(
+            models.APIKey.id == _coerce_uuid(key_id),
+            models.APIKey.user_id == user.id,
+        )
+    )
+    if api_key is None:
+        raise HTTPException(status_code=404, detail="API key not found")
+    if api_key.revoked_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Revoke the API key before deleting it",
+        )
+    db.delete(api_key)
+    db.commit()
+    return Response(status_code=204)

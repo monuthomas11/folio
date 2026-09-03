@@ -147,6 +147,26 @@
   box-shadow: var(--shadow-sm);
 }
 
+.userActive {
+  background: var(--primary-tint);
+  border-color: color-mix(in oklch, var(--primary) 18%, var(--border));
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+  color: inherit;
+  border-radius: var(--radius-md);
+}
+
+.userProfile:hover .userName,
+.userActive .userName {
+  color: var(--primary-ink);
+}
+
 .avatar {
   display: grid;
   place-items: center;
