@@ -82,7 +82,9 @@ class Alert(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    holding_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("holdings.id"), index=True)
+    holding_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("holdings.id", ondelete="CASCADE"), index=True
+    )
     symbol: Mapped[str] = mapped_column(String(20))
     kind: Mapped[str] = mapped_column(String(20))
     price: Mapped[float] = mapped_column(Numeric(12, 4))
@@ -203,7 +205,7 @@ class AnalysisRun(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     kind: Mapped[str] = mapped_column(String(20))
     holding_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("holdings.id"), nullable=True
+        ForeignKey("holdings.id", ondelete="CASCADE"), nullable=True
     )
     status: Mapped[str] = mapped_column(String(30), default="CREATED", index=True)
     stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -227,11 +229,11 @@ class Recommendation(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     run_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("analysis_runs.id"), index=True
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), index=True
     )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     holding_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("holdings.id"), nullable=True, index=True
+        ForeignKey("holdings.id", ondelete="CASCADE"), nullable=True, index=True
     )
     kind: Mapped[str] = mapped_column(String(20))
     symbol: Mapped[str] = mapped_column(String(40))

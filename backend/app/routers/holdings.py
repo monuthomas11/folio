@@ -5,7 +5,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
-from sqlalchemy import select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from yfinance_service import fetch_ltp, fetch_ltps, fetch_sector
@@ -227,6 +227,31 @@ def delete_holding(
     db: Session = Depends(get_db),
 ):
     holding = _get_owned_holding(db, user, holding_id)
+    db.execute(
+        delete(models.Recommendation)
+        .where(
+            or_(
+                models.Recommendation.holding_id == holding.id,
+                models.Recommendation.run_id.in_(
+                    select(models.AnalysisRun.id).where(
+                        models.AnalysisRun.holding_id == holding.id,
+                        models.AnalysisRun.user_id == user.id,
+                    )
+                ),
+            ),
+        )
+    )
+    db.execute(
+        delete(models.AnalysisRun)
+        .where(
+            models.AnalysisRun.holding_id == holding.id,
+        )
+    )
+    db.execute(
+        delete(models.Alert).where(
+            models.Alert.holding_id == holding.id,
+        )
+    )
     db.delete(holding)
     db.commit()
 

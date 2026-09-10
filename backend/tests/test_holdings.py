@@ -1,6 +1,8 @@
 import uuid
 
 from .conftest import auth_headers
+from app.database import SessionLocal
+from app.models import Alert, AnalysisRun, Recommendation
 
 
 def _register(client, email="h@test.com"):
@@ -59,6 +61,69 @@ def test_delete_holding(client):
     hid = client.post("/holdings", json=_holding_payload(), headers=headers).json()["id"]
     assert client.delete(f"/holdings/{hid}", headers=headers).status_code == 204
     assert client.get("/holdings", headers=headers).json() == []
+
+
+def test_delete_holding_deletes_referenced_records(client):
+    token = _register(client, "analysis-delete@h.com")
+    headers = auth_headers(token)
+    holding = client.post("/holdings", json=_holding_payload(), headers=headers).json()
+
+    db = SessionLocal()
+    try:
+        run = AnalysisRun(
+            user_id=uuid.UUID(client.get("/auth/me", headers=headers).json()["id"]),
+            kind="holding",
+            holding_id=uuid.UUID(holding["id"]),
+            provider="mock",
+        )
+        db.add(run)
+        db.flush()
+        recommendation = Recommendation(
+            run_id=run.id,
+            user_id=run.user_id,
+            holding_id=run.holding_id,
+            kind="holding",
+            symbol="RELIANCE",
+            rating="HOLD",
+            action="HOLD",
+            summary="Test recommendation",
+            key_reasons=[],
+            key_risks=[],
+            buy_conditions=[],
+            reduce_conditions=[],
+            exit_conditions=[],
+            support_levels=[],
+            resistance_levels=[],
+            evidence_ids=[],
+            data_quality="GOOD",
+            positives=[],
+            concerns=[],
+        )
+        db.add(recommendation)
+        alert = Alert(
+            user_id=run.user_id,
+            holding_id=run.holding_id,
+            symbol="RELIANCE",
+            kind="target-hit",
+            price=3200.0,
+        )
+        db.add(alert)
+        db.commit()
+        run_id = run.id
+        recommendation_id = recommendation.id
+        alert_id = alert.id
+    finally:
+        db.close()
+
+    assert client.delete(f"/holdings/{holding['id']}", headers=headers).status_code == 204
+
+    db = SessionLocal()
+    try:
+        assert db.get(AnalysisRun, run_id) is None
+        assert db.get(Recommendation, recommendation_id) is None
+        assert db.get(Alert, alert_id) is None
+    finally:
+        db.close()
 
 
 def test_update_other_users_holding_not_found(client):
