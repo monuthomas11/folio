@@ -37,6 +37,7 @@ export interface Holding {
   broker: string | null;
   sector: string | null;
   currentLtp: number | null;
+  oneDayChangePct: number | null;
   lastUpdated: string | null;
 }
 

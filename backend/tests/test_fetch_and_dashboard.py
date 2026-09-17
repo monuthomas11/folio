@@ -24,7 +24,11 @@ def _create(client, token, symbol, avg_buy_price, quantity=10, **overrides):
 
 
 def test_fetch_price_updates_holding(client, monkeypatch):
-    monkeypatch.setattr(holdings_router, "fetch_ltp", lambda symbol: 2876.5)
+    monkeypatch.setattr(
+        holdings_router,
+        "fetch_ltp_with_change",
+        lambda symbol: (2876.5, 1.25),
+    )
     monkeypatch.setattr(holdings_router, "fetch_sector", lambda symbol: "Energy")
     token = _register(client)
     headers = auth_headers(token)
@@ -39,6 +43,7 @@ def test_fetch_price_updates_holding(client, monkeypatch):
         if h["id"] == holding["id"]
     )
     assert updated["currentLtp"] == 2876.5
+    assert updated["oneDayChangePct"] == 1.25
     assert updated["lastUpdated"] is not None
     assert updated["sector"] == "Energy"
 
@@ -55,7 +60,7 @@ def test_fetch_price_yfinance_error(client, monkeypatch):
     def boom(symbol):
         raise ValueError("network down")
 
-    monkeypatch.setattr(holdings_router, "fetch_ltp", boom)
+    monkeypatch.setattr(holdings_router, "fetch_ltp_with_change", boom)
     token = _register(client, "f3@test.com")
     _create(client, token, "TCS", 3000.0)
     r = client.post("/holdings/fetch-price/TCS", headers=auth_headers(token))
@@ -65,8 +70,12 @@ def test_fetch_price_yfinance_error(client, monkeypatch):
 def test_fetch_all_updates_all(client, monkeypatch):
     monkeypatch.setattr(
         holdings_router,
-        "fetch_ltps",
-        lambda symbols: ({"RELIANCE": 100.0, "TCS": 200.0}, {}),
+        "fetch_price_data",
+        lambda symbols: (
+            {"RELIANCE": 100.0, "TCS": 200.0},
+            {"RELIANCE": 2.5, "TCS": -1.5},
+            {},
+        ),
     )
     monkeypatch.setattr(holdings_router, "fetch_sector", lambda symbol: "Tech")
     token = _register(client, "f4@test.com")
@@ -79,6 +88,8 @@ def test_fetch_all_updates_all(client, monkeypatch):
     by_symbol = {h["symbol"]: h for h in r.json()}
     assert by_symbol["RELIANCE"]["currentLtp"] == 100.0
     assert by_symbol["TCS"]["currentLtp"] == 200.0
+    assert by_symbol["RELIANCE"]["oneDayChangePct"] == 2.5
+    assert by_symbol["TCS"]["oneDayChangePct"] == -1.5
     assert by_symbol["RELIANCE"]["sector"] == "Tech"
     assert by_symbol["TCS"]["sector"] == "Tech"
 
@@ -88,7 +99,15 @@ def test_dashboard_snapshot(client, monkeypatch):
         prices = {"RELIANCE": 120.0, "TITAN": 120.0}
         return prices, {}
 
-    monkeypatch.setattr(holdings_router, "fetch_ltps", fake_ltps)
+    monkeypatch.setattr(
+        holdings_router,
+        "fetch_price_data",
+        lambda symbols: (
+            fake_ltps(symbols)[0],
+            {symbol: None for symbol in symbols},
+            fake_ltps(symbols)[1],
+        ),
+    )
     monkeypatch.setattr(holdings_router, "fetch_sector", lambda symbol: "Auto")
     token = _register(client, "f5@test.com")
     headers = auth_headers(token)

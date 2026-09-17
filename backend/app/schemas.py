@@ -63,6 +63,7 @@ class HoldingOut(APIModel):
     broker: str | None
     sector: str | None
     current_ltp: float | None
+    one_day_change_pct: float | None
     last_updated: datetime | None
     created_at: datetime
 
@@ -70,6 +71,7 @@ class HoldingOut(APIModel):
 class PriceOut(APIModel):
     symbol: str
     ltp: float
+    one_day_change_pct: float | None = None
     last_updated: datetime
 
 

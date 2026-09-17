@@ -286,12 +286,30 @@ def _get_or_create_profile(
 async def run_holding_analysis(
     session_factory, run_id: uuid.UUID, holding_id: uuid.UUID
 ) -> None:
-    provider = PROVIDER_FACTORY()
+    try:
+        provider = PROVIDER_FACTORY()
+    except Exception as exc:
+        with session_factory() as session:
+            run = session.get(models.AnalysisRun, run_id)
+            if run is not None:
+                run.status = "FAILED"
+                run.stage = None
+                run.error_message = f"LLM provider misconfigured: {exc}"
+                run.completed_at = _now()
+                session.commit()
+        return
     ctx = _RunContext(session_factory, run_id, provider)
 
     with session_factory() as session:
         run = session.get(models.AnalysisRun, run_id)
-        if run is None or run.kind != "holding":
+        if run is None:
+            return
+        if run.kind != "holding":
+            run.status = "FAILED"
+            run.stage = None
+            run.error_message = "Invalid analysis run kind"
+            run.completed_at = _now()
+            session.commit()
             return
         holding = session.get(models.Holding, holding_id)
         if holding is None or holding.user_id != run.user_id:
@@ -328,12 +346,30 @@ async def run_holding_analysis(
 async def run_portfolio_analysis(
     session_factory, run_id: uuid.UUID
 ) -> None:
-    provider = PROVIDER_FACTORY()
+    try:
+        provider = PROVIDER_FACTORY()
+    except Exception as exc:
+        with session_factory() as session:
+            run = session.get(models.AnalysisRun, run_id)
+            if run is not None:
+                run.status = "FAILED"
+                run.stage = None
+                run.error_message = f"LLM provider misconfigured: {exc}"
+                run.completed_at = _now()
+                session.commit()
+        return
     ctx = _RunContext(session_factory, run_id, provider)
 
     with session_factory() as session:
         run = session.get(models.AnalysisRun, run_id)
-        if run is None or run.kind != "portfolio":
+        if run is None:
+            return
+        if run.kind != "portfolio":
+            run.status = "FAILED"
+            run.stage = None
+            run.error_message = "Invalid analysis run kind"
+            run.completed_at = _now()
+            session.commit()
             return
         holdings = list(
             session.scalars(

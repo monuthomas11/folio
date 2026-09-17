@@ -41,6 +41,32 @@ def test_create_and_list(client):
     assert len(listing.json()) == 1
 
 
+def test_create_existing_symbol_merges_quantity_and_weighted_average(client):
+    token = _register(client, "merge@h.com")
+    headers = auth_headers(token)
+    client.post(
+        "/holdings",
+        json=_holding_payload(symbol="APOLLO", quantity=10, avgBuyPrice=100.0),
+        headers=headers,
+    )
+
+    r = client.post(
+        "/holdings",
+        json=_holding_payload(
+            symbol="apollo", quantity=5, avgBuyPrice=130.0, stopLoss=None
+        ),
+        headers=headers,
+    )
+
+    assert r.status_code == 201
+    body = r.json()
+    assert body["symbol"] == "APOLLO"
+    assert body["quantity"] == 15
+    assert body["avgBuyPrice"] == 110.0
+    assert body["stopLoss"] == 2200.0
+    assert len(client.get("/holdings", headers=headers).json()) == 1
+
+
 def test_update_holding(client):
     token = _register(client)
     headers = auth_headers(token)

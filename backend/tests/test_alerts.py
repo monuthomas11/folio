@@ -21,7 +21,15 @@ def _patch_prices(monkeypatch, price_map):
                 errors[symbol] = "no data"
         return prices, errors
 
-    monkeypatch.setattr(holdings_router, "fetch_ltps", fake_ltps)
+    monkeypatch.setattr(
+        holdings_router,
+        "fetch_price_data",
+        lambda symbols: (
+            fake_ltps(symbols)[0],
+            {symbol: None for symbol in symbols},
+            fake_ltps(symbols)[1],
+        ),
+    )
     monkeypatch.setattr(holdings_router, "fetch_sector", lambda symbol: None)
 
 

@@ -68,7 +68,38 @@ def _get_owned_run(db: Session, user: models.User, run_id: str) -> models.Analys
     return run
 
 
+def _run_age_seconds(run: models.AnalysisRun) -> float:
+    base = run.created_at
+    if base is None:
+        return 0.0
+    if base.tzinfo is None:
+        base = base.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - base).total_seconds()
+
+
+def _expire_stale_runs(db: Session, user: models.User) -> None:
+    stale = db.scalars(
+        select(models.AnalysisRun).where(
+            models.AnalysisRun.user_id == user.id,
+            models.AnalysisRun.status.in_(["CREATED", "RUNNING"]),
+        )
+    ).all()
+    expired = False
+    for run in stale:
+        if _run_age_seconds(run) > settings.analysis_run_timeout_seconds:
+            run.status = "FAILED"
+            run.stage = None
+            run.error_message = (
+                "Analysis timed out before completing. Please try again."
+            )
+            run.completed_at = datetime.now(timezone.utc)
+            expired = True
+    if expired:
+        db.commit()
+
+
 def _guard_new_run(db: Session, user: models.User, kind: str) -> None:
+    _expire_stale_runs(db, user)
     active = db.scalar(
         select(models.AnalysisRun).where(
             models.AnalysisRun.user_id == user.id,
@@ -283,6 +314,47 @@ def start_portfolio_analysis(
 
     background_tasks.add_task(run_portfolio_analysis, SessionLocal, run.id)
     return schemas.StartedRunOut(run_id=run.id)
+
+
+@router.get("/active", response_model=schemas.AnalysisRunOut | None)
+def get_active_run(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _expire_stale_runs(db, user)
+    return db.scalar(
+        select(models.AnalysisRun)
+        .where(
+            models.AnalysisRun.user_id == user.id,
+            models.AnalysisRun.status.in_(["CREATED", "RUNNING"]),
+        )
+        .order_by(models.AnalysisRun.created_at.desc())
+        .limit(1)
+    )
+
+
+@router.post("/active/cancel", response_model=schemas.AnalysisRunOut | None)
+def cancel_active_run(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    active = db.scalars(
+        select(models.AnalysisRun).where(
+            models.AnalysisRun.user_id == user.id,
+            models.AnalysisRun.status.in_(["CREATED", "RUNNING"]),
+        )
+    ).all()
+    if not active:
+        return None
+    cancelled = active[0]
+    for run in active:
+        run.status = "FAILED"
+        run.stage = None
+        run.error_message = "Cancelled. Please start a new analysis."
+        run.completed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(cancelled)
+    return cancelled
 
 
 @router.get("/{run_id}")

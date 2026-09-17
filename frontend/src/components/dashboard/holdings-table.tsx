@@ -47,6 +47,15 @@ function PnLCell({ pnl, pnlPct }: { pnl: number; pnlPct: number }) {
   );
 }
 
+function DayChangeCell({ value }: { value: number | null }) {
+  if (value == null) {
+    return <span className={styles.pending}>—</span>;
+  }
+  const tone = value > 0 ? styles.changeGain : value < 0 ? styles.changeLoss : styles.changeFlat;
+  const arrow = value > 0 ? "↑ " : value < 0 ? "↓ " : "";
+  return <span className={tone}>{arrow}{formatSigned(value)}</span>;
+}
+
 export function HoldingsTable({
   holdings,
   refreshingSymbols,
@@ -95,6 +104,9 @@ export function HoldingsTable({
                 LTP
               </th>
               <th scope="col" className={styles.numHeader}>
+                1D change
+              </th>
+              <th scope="col" className={styles.numHeader}>
                 SL
               </th>
               <th scope="col" className={styles.numHeader}>
@@ -139,6 +151,7 @@ export function HoldingsTable({
                       {h.currentLtp != null ? formatPrice(h.currentLtp) : "—"}
                     </span>
                   </td>
+                  <td className="num numeric"><DayChangeCell value={h.oneDayChangePct} /></td>
                   <td className="num numeric">{h.stopLoss != null ? formatPrice(h.stopLoss) : "—"}</td>
                   <td className="num numeric">{h.targetPrice != null ? formatPrice(h.targetPrice) : "—"}</td>
                   <td className="num numeric">{formatINRFractionless(s.invested)}</td>
@@ -245,6 +258,10 @@ export function HoldingsTable({
                       {h.currentLtp != null ? formatPrice(h.currentLtp) : "—"}
                     </span>
                   </dd>
+                </div>
+                <div>
+                  <dt>1D change</dt>
+                  <dd className="num"><DayChangeCell value={h.oneDayChangePct} /></dd>
                 </div>
                 <div>
                   <dt>SL / Target</dt>

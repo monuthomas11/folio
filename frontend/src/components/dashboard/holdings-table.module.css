@@ -153,6 +153,24 @@
   color: var(--faint);
 }
 
+.changeGain,
+.changeLoss,
+.changeFlat {
+  font-weight: 600;
+}
+
+.changeGain {
+  color: var(--gain);
+}
+
+.changeLoss {
+  color: var(--loss);
+}
+
+.changeFlat {
+  color: var(--muted);
+}
+
 .pnlGain {
   display: inline-flex;
   flex-direction: column;

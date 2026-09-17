@@ -64,6 +64,9 @@ class Holding(Base):
     broker: Mapped[str | None] = mapped_column(String(100), nullable=True)
     sector: Mapped[str | None] = mapped_column(String(100), nullable=True)
     current_ltp: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
+    one_day_change_pct: Mapped[float | None] = mapped_column(
+        Numeric(8, 4), nullable=True
+    )
     last_updated: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

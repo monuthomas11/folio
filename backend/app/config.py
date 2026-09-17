@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     llm_max_requests_per_minute: int = Field(default=15, gt=0)
     llm_min_request_interval_seconds: float = Field(default=0.0, ge=0)
     analysis_min_interval_seconds: int = 300
+    analysis_run_timeout_seconds: int = 900
     fundamentals_cache_ttl_seconds: int = 21600
     external_api_rate_limit_per_minute: int = Field(default=30, gt=0)
     external_api_max_body_bytes: int = Field(default=65536, gt=0)

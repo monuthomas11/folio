@@ -32,9 +32,22 @@ def _migrate_sqlite() -> None:
                 )
 
 
+def _migrate_postgres() -> None:
+    if engine.dialect.name != "postgresql":
+        return
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE holdings ADD COLUMN IF NOT EXISTS "
+                "one_day_change_pct NUMERIC(8, 4)"
+            )
+        )
+
+
 def create_app() -> FastAPI:
     Base.metadata.create_all(bind=engine)
     _migrate_sqlite()
+    _migrate_postgres()
 
     app = FastAPI(
         title="Folio API",

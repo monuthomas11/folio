@@ -2,13 +2,14 @@ from datetime import datetime, timezone
 import csv
 import io
 import uuid
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
-from yfinance_service import fetch_ltp, fetch_ltps, fetch_sector
+from yfinance_service import fetch_ltp_with_change, fetch_price_data, fetch_sector
 
 from .. import models, schemas
 from ..database import get_db
@@ -47,6 +48,49 @@ def _get_owned_holding(
 
 def _missing_sector(holding: models.Holding) -> bool:
     return not (holding.sector or "").strip()
+
+
+def _merge_or_create_holding(
+    db: Session, user: models.User, payload: schemas.HoldingIn
+) -> models.Holding:
+    symbol = payload.symbol.strip().upper()
+    holding = db.scalar(
+        select(models.Holding).where(
+            models.Holding.user_id == user.id,
+            models.Holding.symbol == symbol,
+        )
+    )
+    if holding is None:
+        holding = models.Holding(
+            user_id=user.id,
+            symbol=symbol,
+            quantity=payload.quantity,
+            avg_buy_price=payload.avg_buy_price,
+            stop_loss=payload.stop_loss,
+            target_price=payload.target_price,
+            broker=payload.broker,
+            sector=payload.sector,
+        )
+        db.add(holding)
+        return holding
+
+    existing_quantity = Decimal(str(holding.quantity))
+    new_quantity = Decimal(str(payload.quantity))
+    existing_cost = existing_quantity * Decimal(str(holding.avg_buy_price))
+    new_cost = new_quantity * Decimal(str(payload.avg_buy_price))
+    total_quantity = existing_quantity + new_quantity
+
+    holding.quantity = total_quantity
+    holding.avg_buy_price = (existing_cost + new_cost) / total_quantity
+    if payload.stop_loss is not None:
+        holding.stop_loss = payload.stop_loss
+    if payload.target_price is not None:
+        holding.target_price = payload.target_price
+    if payload.broker is not None:
+        holding.broker = payload.broker
+    if payload.sector is not None:
+        holding.sector = payload.sector
+    return holding
 
 
 @router.get("", response_model=list[schemas.HoldingOut])
@@ -184,17 +228,7 @@ def create_holding(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    holding = models.Holding(
-        user_id=user.id,
-        symbol=payload.symbol.strip().upper(),
-        quantity=payload.quantity,
-        avg_buy_price=payload.avg_buy_price,
-        stop_loss=payload.stop_loss,
-        target_price=payload.target_price,
-        broker=payload.broker,
-        sector=payload.sector,
-    )
-    db.add(holding)
+    holding = _merge_or_create_holding(db, user, payload)
     db.commit()
     db.refresh(holding)
     return holding
@@ -275,7 +309,7 @@ def fetch_price(
         )
 
     try:
-        ltp = fetch_ltp(symbol)
+        ltp, one_day_change_pct = fetch_ltp_with_change(symbol)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -290,13 +324,19 @@ def fetch_price(
     now = datetime.now(timezone.utc)
     for holding in holdings:
         holding.current_ltp = ltp
+        holding.one_day_change_pct = one_day_change_pct
         if sector and _missing_sector(holding):
             holding.sector = sector
         holding.last_updated = now
         evaluate_and_create_alerts(db, holding)
     db.commit()
 
-    return schemas.PriceOut(symbol=symbol.strip().upper(), ltp=ltp, last_updated=now)
+    return schemas.PriceOut(
+        symbol=symbol.strip().upper(),
+        ltp=ltp,
+        one_day_change_pct=one_day_change_pct,
+        last_updated=now,
+    )
 
 
 @router.post("/fetch-all", response_model=list[schemas.HoldingOut])
@@ -311,7 +351,7 @@ def fetch_all_prices(
         return []
 
     symbols = {h.symbol for h in holdings}
-    prices, errors = fetch_ltps(symbols)
+    prices, changes, errors = fetch_price_data(symbols)
     if not prices and errors:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -331,6 +371,7 @@ def fetch_all_prices(
         if price is None:
             continue
         holding.current_ltp = price
+        holding.one_day_change_pct = changes.get(holding.symbol)
         if holding.symbol in sectors and _missing_sector(holding):
             holding.sector = sectors[holding.symbol]
         holding.last_updated = now
