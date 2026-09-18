@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { IconPlus, IconRefresh, IconTrendDown, IconTrendUp } from "@/components/icons";
 import { api } from "@/lib/api";
 import { holdingStats } from "@/lib/holdings";
-import { formatDate, formatINRFractionless, formatSigned } from "@/lib/format";
+import { formatDate, formatINRFractionless, formatSigned, formatSignedINR } from "@/lib/format";
 import type { Holding, PortfolioAlert, PortfolioSummary } from "@/lib/types";
 import styles from "./page.module.css";
 
@@ -164,6 +164,19 @@ export default function DashboardPage() {
               {gainersLosers.losers} down
             </span>
           }
+          loading={loading}
+        />
+        <KpiCard
+          label="Realized P/L"
+          value={summary ? formatSignedINR(summary.realizedPnl) : "—"}
+          sub={
+            summary
+              ? summary.closedTradeCount > 0
+                ? `${summary.closedTradeCount} recorded ${summary.closedTradeCount === 1 ? "exit" : "exits"}`
+                : "No exits recorded"
+              : undefined
+          }
+          accent={summary ? (summary.realizedPnl >= 0 ? "gain" : "loss") : "default"}
           loading={loading}
         />
       </section>

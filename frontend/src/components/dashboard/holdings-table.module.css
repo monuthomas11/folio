@@ -250,6 +250,16 @@
   color: var(--loss);
 }
 
+.exitAction {
+  color: var(--loss);
+}
+
+.exitAction:hover:not(:disabled) {
+  color: var(--loss);
+  background: var(--loss-fill);
+  border-color: oklch(0.85 0.04 27);
+}
+
 .removeAction:hover:not(:disabled) {
   color: var(--loss);
   background: var(--loss-fill);

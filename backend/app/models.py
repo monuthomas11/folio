@@ -46,6 +46,9 @@ class User(Base):
     watchlist_alerts: Mapped[list["WatchlistAlert"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    holding_exits: Mapped[list["HoldingExit"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
     api_keys: Mapped[list["APIKey"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
@@ -78,6 +81,26 @@ class Holding(Base):
     alerts: Mapped[list["Alert"]] = relationship(
         back_populates="holding", cascade="all, delete-orphan"
     )
+
+
+class HoldingExit(Base):
+    __tablename__ = "holding_exits"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(20))
+    quantity: Mapped[float] = mapped_column(Numeric(10, 3))
+    avg_buy_price: Mapped[float] = mapped_column(Numeric(12, 4))
+    exit_price: Mapped[float] = mapped_column(Numeric(12, 4))
+    cost_basis: Mapped[float] = mapped_column(Numeric(14, 4))
+    proceeds: Mapped[float] = mapped_column(Numeric(14, 4))
+    realized_pnl: Mapped[float] = mapped_column(Numeric(14, 4))
+    broker: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    exited_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+    user: Mapped[User] = relationship(back_populates="holding_exits")
 
 
 class Alert(Base):

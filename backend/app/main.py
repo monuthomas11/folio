@@ -120,6 +120,11 @@ def create_app() -> FastAPI:
                 models.WatchlistAlert.dismissed.is_(False),
             )
         ).all()
+        realized_exits = db.scalars(
+            select(models.HoldingExit)
+            .where(models.HoldingExit.user_id == user.id)
+            .order_by(models.HoldingExit.exited_at.desc())
+        ).all()
 
         portfolio_value = 0.0
         invested = 0.0
@@ -140,6 +145,14 @@ def create_app() -> FastAPI:
 
         total_pnl = portfolio_value - invested
         total_pnl_pct = (total_pnl / invested * 100) if invested > 0 else 0.0
+        realized_cost_basis = sum(float(exit.cost_basis) for exit in realized_exits)
+        realized_proceeds = sum(float(exit.proceeds) for exit in realized_exits)
+        realized_pnl = realized_proceeds - realized_cost_basis
+        realized_pnl_pct = (
+            realized_pnl / realized_cost_basis * 100
+            if realized_cost_basis > 0
+            else 0.0
+        )
 
         return schemas.SnapshotOut(
             summary=schemas.SummaryOut(
@@ -151,6 +164,11 @@ def create_app() -> FastAPI:
                 active_alert_count=len(active_alerts) + len(active_watchlist_alerts),
                 gainers=gainers,
                 losers=losers,
+                realized_pnl=round(realized_pnl, 2),
+                realized_pnl_pct=round(realized_pnl_pct, 2),
+                realized_cost_basis=round(realized_cost_basis, 2),
+                realized_proceeds=round(realized_proceeds, 2),
+                closed_trade_count=len(realized_exits),
             ),
             holdings=holdings,
             alerts=sorted(
@@ -158,6 +176,7 @@ def create_app() -> FastAPI:
                 key=lambda alert: alert.created_at,
                 reverse=True,
             ),
+            realized_exits=realized_exits,
         )
 
     return app

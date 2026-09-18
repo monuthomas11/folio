@@ -6,7 +6,7 @@ import { holdingStats } from "@/lib/holdings";
 import { formatINRFractionless, formatPrice, formatQuantity, formatSigned, parseBackendDate } from "@/lib/format";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
-import { IconPencil, IconRefresh, IconTrash } from "@/components/icons";
+import { IconCheck, IconPencil, IconRefresh, IconTrash } from "@/components/icons";
 import styles from "./holdings-table.module.css";
 
 interface HoldingsTableProps {
@@ -15,7 +15,9 @@ interface HoldingsTableProps {
   onRefreshRow: (symbol: string) => void;
   onEdit?: (holding: Holding) => void;
   onDelete?: (holding: Holding) => void;
+  onExit?: (holding: Holding) => void;
   removingIds?: Set<string>;
+  exitingIds?: Set<string>;
   lastUpdated: string | null;
   aiRatings?: Record<string, AnalysisRating>;
 }
@@ -62,7 +64,9 @@ export function HoldingsTable({
   onRefreshRow,
   onEdit,
   onDelete,
+  onExit,
   removingIds,
+  exitingIds,
   lastUpdated,
   aiRatings,
 }: HoldingsTableProps) {
@@ -134,6 +138,7 @@ export function HoldingsTable({
               const meta = STATUS_META[s.status];
               const refreshing = refreshingSymbols.has(h.symbol);
               const removing = removingIds?.has(h.id) ?? false;
+              const exiting = exitingIds?.has(h.id) ?? false;
               return (
                 <tr key={h.id}>
                   <td>
@@ -205,6 +210,19 @@ export function HoldingsTable({
                         variant="ghost"
                         size="sm"
                         className={styles.removeAction}
+                        onClick={() => onExit?.(h)}
+                        loading={exiting}
+                        disabled={exiting || removing}
+                        aria-label={`Exit ${h.symbol}`}
+                        title="Record an exit"
+                      >
+                        {!exiting && <IconCheck width={14} height={14} />}
+                        {exiting ? "Exiting" : "Exit"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={styles.removeAction}
                         onClick={() => onDelete?.(h)}
                         loading={removing}
                         disabled={removing}
@@ -229,6 +247,7 @@ export function HoldingsTable({
           const meta = STATUS_META[s.status];
           const refreshing = refreshingSymbols.has(h.symbol);
           const removing = removingIds?.has(h.id) ?? false;
+          const exiting = exitingIds?.has(h.id) ?? false;
           return (
             <article key={h.id} className={styles.card}>
               <header className={styles.cardHeader}>
@@ -300,6 +319,17 @@ export function HoldingsTable({
                   >
                     <IconPencil width={14} height={14} />
                     Edit
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className={styles.exitAction}
+                    onClick={() => onExit?.(h)}
+                    loading={exiting}
+                    disabled={exiting || removing}
+                  >
+                    {!exiting && <IconCheck width={14} height={14} />}
+                    {exiting ? "Exiting" : "Exit holding"}
                   </Button>
                   <Button
                     variant="secondary"

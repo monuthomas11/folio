@@ -50,6 +50,35 @@ def _missing_sector(holding: models.Holding) -> bool:
     return not (holding.sector or "").strip()
 
 
+def _delete_holding_dependents(
+    db: Session, user: models.User, holding: models.Holding
+) -> None:
+    db.execute(
+        delete(models.Recommendation)
+        .where(
+            or_(
+                models.Recommendation.holding_id == holding.id,
+                models.Recommendation.run_id.in_(
+                    select(models.AnalysisRun.id).where(
+                        models.AnalysisRun.holding_id == holding.id,
+                        models.AnalysisRun.user_id == user.id,
+                    )
+                ),
+            ),
+        )
+    )
+    db.execute(
+        delete(models.AnalysisRun).where(
+            models.AnalysisRun.holding_id == holding.id,
+        )
+    )
+    db.execute(
+        delete(models.Alert).where(
+            models.Alert.holding_id == holding.id,
+        )
+    )
+
+
 def _merge_or_create_holding(
     db: Session, user: models.User, payload: schemas.HoldingIn
 ) -> models.Holding:
@@ -261,33 +290,70 @@ def delete_holding(
     db: Session = Depends(get_db),
 ):
     holding = _get_owned_holding(db, user, holding_id)
-    db.execute(
-        delete(models.Recommendation)
-        .where(
-            or_(
-                models.Recommendation.holding_id == holding.id,
-                models.Recommendation.run_id.in_(
-                    select(models.AnalysisRun.id).where(
-                        models.AnalysisRun.holding_id == holding.id,
-                        models.AnalysisRun.user_id == user.id,
-                    )
-                ),
-            ),
-        )
-    )
-    db.execute(
-        delete(models.AnalysisRun)
-        .where(
-            models.AnalysisRun.holding_id == holding.id,
-        )
-    )
-    db.execute(
-        delete(models.Alert).where(
-            models.Alert.holding_id == holding.id,
-        )
-    )
+    _delete_holding_dependents(db, user, holding)
     db.delete(holding)
     db.commit()
+
+
+@router.get("/exits", response_model=list[schemas.HoldingExitOut])
+def list_exits(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.scalars(
+        select(models.HoldingExit)
+        .where(models.HoldingExit.user_id == user.id)
+        .order_by(models.HoldingExit.exited_at.desc())
+    ).all()
+
+
+@router.post(
+    "/{holding_id}/exit",
+    response_model=schemas.HoldingExitOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def exit_holding(
+    holding_id: str,
+    payload: schemas.HoldingExitIn,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    holding = _get_owned_holding(db, user, holding_id)
+    quantity = Decimal(str(payload.quantity))
+    holding_quantity = Decimal(str(holding.quantity))
+    if quantity > holding_quantity:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Exit quantity cannot exceed {float(holding_quantity):g}",
+        )
+
+    avg_buy_price = Decimal(str(holding.avg_buy_price))
+    exit_price = Decimal(str(payload.exit_price))
+    cost_basis = quantity * avg_buy_price
+    proceeds = quantity * exit_price
+    exit_record = models.HoldingExit(
+        user_id=user.id,
+        symbol=holding.symbol,
+        quantity=quantity,
+        avg_buy_price=avg_buy_price,
+        exit_price=exit_price,
+        cost_basis=cost_basis,
+        proceeds=proceeds,
+        realized_pnl=proceeds - cost_basis,
+        broker=holding.broker,
+    )
+    db.add(exit_record)
+
+    remaining_quantity = holding_quantity - quantity
+    if remaining_quantity == 0:
+        _delete_holding_dependents(db, user, holding)
+        db.delete(holding)
+    else:
+        holding.quantity = remaining_quantity
+
+    db.commit()
+    db.refresh(exit_record)
+    return exit_record
 
 
 @router.post("/fetch-price/{symbol}", response_model=schemas.PriceOut)

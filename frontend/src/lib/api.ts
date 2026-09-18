@@ -8,6 +8,7 @@ import type {
   ChatResponse,
   Holding,
   HoldingsInput,
+  HoldingExit,
   ImportResult,
   InvestmentProfile,
   InvestmentProfileInput,
@@ -154,6 +155,16 @@ export const api = {
 
   async deleteHolding(id: string): Promise<void> {
     return request<void>(`/holdings/${id}`, { method: "DELETE" });
+  },
+
+  async exitHolding(
+    id: string,
+    input: { quantity: number; exitPrice: number },
+  ): Promise<HoldingExit> {
+    return request<HoldingExit>(`/holdings/${id}/exit`, {
+      method: "POST",
+      body: input,
+    });
   },
 
   async exportHoldings(): Promise<string> {

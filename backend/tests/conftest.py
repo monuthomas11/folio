@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app.database import SessionLocal  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import APIKey, Alert, Holding, User, WatchlistAlert, WatchlistLevel, WatchlistItem  # noqa: E402
+from app.models import APIKey, Alert, Holding, HoldingExit, User, WatchlistAlert, WatchlistLevel, WatchlistItem  # noqa: E402
 
 
 @pytest.fixture()
@@ -30,6 +30,7 @@ def client():
         db.query(WatchlistLevel).delete()
         db.query(WatchlistItem).delete()
         db.query(APIKey).delete()
+        db.query(HoldingExit).delete()
         db.query(Holding).delete()
         db.query(User).delete()
         db.commit()

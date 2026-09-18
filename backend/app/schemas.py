@@ -68,6 +68,24 @@ class HoldingOut(APIModel):
     created_at: datetime
 
 
+class HoldingExitIn(APIModel):
+    quantity: float = Field(gt=0)
+    exit_price: float = Field(gt=0)
+
+
+class HoldingExitOut(APIModel):
+    id: uuid.UUID
+    symbol: str
+    quantity: float
+    avg_buy_price: float
+    exit_price: float
+    cost_basis: float
+    proceeds: float
+    realized_pnl: float
+    broker: str | None
+    exited_at: datetime
+
+
 class PriceOut(APIModel):
     symbol: str
     ltp: float
@@ -97,12 +115,18 @@ class SummaryOut(APIModel):
     active_alert_count: int
     gainers: int
     losers: int
+    realized_pnl: float
+    realized_pnl_pct: float
+    realized_cost_basis: float
+    realized_proceeds: float
+    closed_trade_count: int
 
 
-class SnapshotOut(BaseModel):
+class SnapshotOut(APIModel):
     summary: SummaryOut
     holdings: list[HoldingOut]
     alerts: list[AlertOut]
+    realized_exits: list[HoldingExitOut]
 
 
 class ImportRowError(BaseModel):
@@ -166,7 +190,6 @@ class WatchlistLevelOut(APIModel):
     sort_order: int
     condition_met: bool
     created_at: datetime
-    updated_at: datetime
 
 
 class WatchlistOut(APIModel):

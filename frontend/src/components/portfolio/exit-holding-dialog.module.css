@@ -1,0 +1,187 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: oklch(0.22 0.02 170 / 0.42);
+}
+
+.dialog {
+  width: min(100%, 480px);
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.eyebrow {
+  margin-bottom: var(--space-2);
+  color: var(--loss);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  color: var(--ink-strong);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.subtitle,
+.helper {
+  margin-top: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.positionNote {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.positionNote strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.form {
+  margin-top: var(--space-5);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.fields label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fields input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.fields input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+.estimate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.estimate strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.estimateGain {
+  background: var(--gain-fill);
+  color: var(--gain);
+}
+
+.estimateLoss {
+  background: var(--loss-fill);
+  color: var(--loss);
+}
+
+.helper {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.error {
+  margin-top: var(--space-3);
+  color: var(--loss);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 520px) {
+  .backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .dialog {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-5);
+  }
+
+  .fields {
+    grid-template-columns: 1fr;
+  }
+
+  .actions,
+  .actions > button {
+    width: 100%;
+  }
+}

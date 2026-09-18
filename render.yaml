@@ -41,5 +41,7 @@ services:
         value: 0
       - key: ANALYSIS_MIN_INTERVAL_SECONDS
         value: 300
+      - key: ANALYSIS_RUN_TIMEOUT_SECONDS
+        value: 900
       - key: FUNDAMENTALS_CACHE_TTL_SECONDS
         value: 21600

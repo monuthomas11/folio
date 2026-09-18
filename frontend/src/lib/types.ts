@@ -41,6 +41,19 @@ export interface Holding {
   lastUpdated: string | null;
 }
 
+export interface HoldingExit {
+  id: string;
+  symbol: string;
+  quantity: number;
+  avgBuyPrice: number;
+  exitPrice: number;
+  costBasis: number;
+  proceeds: number;
+  realizedPnl: number;
+  broker: string | null;
+  exitedAt: string;
+}
+
 export interface PortfolioAlert {
   id: string;
   holdingId: string | null;
@@ -73,12 +86,18 @@ export interface PortfolioSummary {
   activeAlertCount: number;
   gainers: number;
   losers: number;
+  realizedPnl: number;
+  realizedPnlPct: number;
+  realizedCostBasis: number;
+  realizedProceeds: number;
+  closedTradeCount: number;
 }
 
 export interface PortfolioSnapshot {
   summary: PortfolioSummary;
   holdings: Holding[];
   alerts: PortfolioAlert[];
+  realizedExits: HoldingExit[];
 }
 
 export type WatchlistLevelKind = "entry" | "target" | "stop-loss" | "invalidation";
