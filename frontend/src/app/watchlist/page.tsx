@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { WatchlistForm } from "@/components/watchlist/watchlist-form";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IconArrowRight, IconPencil, IconRefresh, IconTrash } from "@/components/icons";
+import { IconActivity, IconArrowRight, IconPencil, IconRefresh, IconTrash } from "@/components/icons";
 import { api } from "@/lib/api";
 import { formatPrice, formatTime } from "@/lib/format";
 import type { PortfolioAlert, WatchlistInput, WatchlistItem, WatchlistLevelKind } from "@/lib/types";
@@ -110,8 +110,11 @@ export default function WatchlistPage() {
             return <article key={item.id} className={`${styles.card} ${alertSymbols.has(item.id) ? styles.cardAlert : ""}`}>
               <div className={styles.cardTop}>
                 <div><h3 className={styles.symbol}>{item.symbol}</h3><p className={styles.updated}>{item.lastUpdated ? `Updated ${formatTime(item.lastUpdated)}` : "Awaiting first price refresh"}</p></div>
-                <div className={styles.priceBlock} aria-label={`Current LTP for ${item.symbol}`}>
-                  <span className={styles.priceLabel}>Current LTP</span>
+                <div className={`${styles.priceBlock} ${item.currentLtp == null ? styles.pricePending : ""}`} aria-label={`Current LTP for ${item.symbol}`}>
+                  <div className={styles.priceHead}>
+                    <span className={styles.priceIcon}><IconActivity width={13} height={13} /></span>
+                    <span className={styles.priceLabel}>Current LTP</span>
+                  </div>
                   <strong className={`num ${styles.priceValue}`}>{item.currentLtp == null ? "—" : formatPrice(item.currentLtp)}</strong>
                 </div>
                 <div className={styles.cardActions}>

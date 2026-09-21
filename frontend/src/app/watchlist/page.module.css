@@ -17,9 +17,14 @@
 .cardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
 .symbol { color: var(--ink-strong); font-size: var(--text-md); font-weight: 700; letter-spacing: .02em; }
 .updated { margin-top: 3px; color: var(--muted); font-size: var(--text-xs); }
-.priceBlock { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; }
-.priceLabel { color: var(--muted); font-size: var(--text-2xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-.priceValue { color: var(--ink-strong); font-size: var(--text-lg); font-weight: 700; }
+.priceBlock { display: flex; flex-direction: column; gap: 5px; min-width: 10.5rem; margin-left: auto; padding: var(--space-3) var(--space-4); border: 1px solid var(--primary-tint); border-radius: var(--radius-lg); background: var(--primary-tint); }
+.priceHead { display: flex; align-items: center; gap: var(--space-2); }
+.priceIcon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: var(--radius-sm); background: var(--surface); color: var(--primary); }
+.priceLabel { color: var(--primary-ink); font-size: var(--text-2xs); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
+.priceValue { color: var(--ink-strong); font-size: var(--text-xl); font-weight: 750; letter-spacing: -.02em; line-height: 1.1; }
+.pricePending { border-color: var(--border); background: var(--surface-2); }
+.pricePending .priceIcon { color: var(--muted); }
+.pricePending .priceLabel { color: var(--muted); }
 .cardActions { display: flex; align-items: center; gap: var(--space-1); }
 .delete { color: var(--loss); }
 .notes { max-width: 70ch; margin-top: var(--space-4); color: var(--ink); font-size: var(--text-sm); }
@@ -51,8 +56,8 @@
   }
 
   .priceBlock {
-    align-items: flex-start;
     margin-left: 0;
+    width: 100%;
   }
 
   .card {
