@@ -177,6 +177,8 @@ export default function PortfolioPage() {
         </div>
       </header>
 
+      {summary && <RealizedTrades summary={summary} exits={realizedExits} />}
+
       {error && (
         <div className={styles.error} role="alert">
           <span>{error}</span>
@@ -200,8 +202,6 @@ export default function PortfolioPage() {
           onError={(message) => setError(message)}
         />
       </div>
-
-      {summary && <RealizedTrades summary={summary} exits={realizedExits} />}
 
       <section className={styles.tableSection}>
         {loading ? (

@@ -109,7 +109,11 @@ export default function WatchlistPage() {
             const refreshingItem = refreshingSymbols.has(item.symbol);
             return <article key={item.id} className={`${styles.card} ${alertSymbols.has(item.id) ? styles.cardAlert : ""}`}>
               <div className={styles.cardTop}>
-                <div><h3 className={styles.symbol}>{item.symbol}</h3><p className={styles.updated}>{item.currentLtp == null ? "No price yet" : `LTP ${formatPrice(item.currentLtp)}${item.lastUpdated ? ` · ${formatTime(item.lastUpdated)}` : ""}`}</p></div>
+                <div><h3 className={styles.symbol}>{item.symbol}</h3><p className={styles.updated}>{item.lastUpdated ? `Updated ${formatTime(item.lastUpdated)}` : "Awaiting first price refresh"}</p></div>
+                <div className={styles.priceBlock} aria-label={`Current LTP for ${item.symbol}`}>
+                  <span className={styles.priceLabel}>Current LTP</span>
+                  <strong className={`num ${styles.priceValue}`}>{item.currentLtp == null ? "—" : formatPrice(item.currentLtp)}</strong>
+                </div>
                 <div className={styles.cardActions}>
                   <Button variant="ghost" size="sm" onClick={() => setEditing(item)}><IconPencil width={14} height={14} />Edit</Button>
                   <Button variant="ghost" size="sm" onClick={() => void refreshSymbol(item.symbol)} loading={refreshingItem}>{!refreshingItem && <IconRefresh width={14} height={14} />}{refreshingItem ? "Fetching" : "Fetch"}</Button>
@@ -120,7 +124,7 @@ export default function WatchlistPage() {
               <div className={styles.levels}>
                 {item.levels.length === 0 ? <span className={styles.noLevelText}>No levels configured.</span> : item.levels.map((level) => { const meta = KIND_META[level.kind]; return <div className={styles.level} key={level.id}><span className={`${styles.kind} ${meta.className}`}>{meta.label}</span><span className={styles.levelName}>{level.label || "Price level"}</span><span className="num">{levelValue(level.lowerPrice, level.upperPrice)}</span><span className={`${styles.condition} ${level.conditionMet ? styles.triggered : ""}`}>{level.conditionMet ? "Triggered" : "Watching"}</span></div>; })}
               </div>
-              {itemAlerts.length > 0 && <div className={styles.alertNote}>{itemAlerts.length} active {itemAlerts.length === 1 ? "alert" : "alerts"} · refresh to reassess levels</div>}
+              {itemAlerts.length > 0 && <div className={styles.alertNote}>{itemAlerts.some((alert) => alert.kind === "entry-reached") ? "Entry zone reached" : `${itemAlerts.length} active ${itemAlerts.length === 1 ? "alert" : "alerts"}`} · refresh to reassess levels</div>}
               <Link className={styles.portfolioLink} href={prefill(item)}>Add to portfolio <IconArrowRight width={14} height={14} /></Link>
             </article>;
           })}

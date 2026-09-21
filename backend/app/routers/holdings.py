@@ -7,7 +7,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy import delete, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from yfinance_service import fetch_ltp_with_change, fetch_price_data, fetch_sector
 
@@ -15,6 +15,7 @@ from .. import models, schemas
 from ..database import get_db
 from ..security import get_current_user
 from ..services.alerts import evaluate_and_create_alerts
+from ..services.watchlist import update_watchlist_items
 
 router = APIRouter(prefix="/holdings", tags=["holdings"])
 
@@ -395,6 +396,15 @@ def fetch_price(
             holding.sector = sector
         holding.last_updated = now
         evaluate_and_create_alerts(db, holding)
+    watchlist_items = db.scalars(
+        select(models.WatchlistItem)
+        .options(selectinload(models.WatchlistItem.levels))
+        .where(
+            models.WatchlistItem.user_id == user.id,
+            models.WatchlistItem.symbol == symbol.strip().upper(),
+        )
+    ).all()
+    update_watchlist_items(db, watchlist_items, {symbol.strip().upper(): ltp}, now)
     db.commit()
 
     return schemas.PriceOut(
@@ -413,10 +423,15 @@ def fetch_all_prices(
     holdings = db.scalars(
         select(models.Holding).where(models.Holding.user_id == user.id)
     ).all()
-    if not holdings:
+    watchlist_items = db.scalars(
+        select(models.WatchlistItem)
+        .options(selectinload(models.WatchlistItem.levels))
+        .where(models.WatchlistItem.user_id == user.id)
+    ).all()
+    if not holdings and not watchlist_items:
         return []
 
-    symbols = {h.symbol for h in holdings}
+    symbols = {h.symbol for h in holdings} | {item.symbol for item in watchlist_items}
     prices, changes, errors = fetch_price_data(symbols)
     if not prices and errors:
         raise HTTPException(
@@ -442,6 +457,7 @@ def fetch_all_prices(
             holding.sector = sectors[holding.symbol]
         holding.last_updated = now
         evaluate_and_create_alerts(db, holding)
+    update_watchlist_items(db, watchlist_items, prices, now)
     db.commit()
 
     return db.scalars(

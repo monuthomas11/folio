@@ -94,6 +94,37 @@ def test_fetch_all_updates_all(client, monkeypatch):
     assert by_symbol["TCS"]["sector"] == "Tech"
 
 
+def test_fetch_all_updates_matching_watchlist_and_entry_alert(client, monkeypatch):
+    monkeypatch.setattr(
+        holdings_router,
+        "fetch_price_data",
+        lambda symbols: ({"RELIANCE": 120.0}, {"RELIANCE": 1.0}, {}),
+    )
+    token = _register(client, "watch-refresh@test.com")
+    headers = auth_headers(token)
+    _create(client, token, "RELIANCE", 100.0)
+    watchlist = client.post(
+        "/watchlist",
+        json={
+            "symbol": "RELIANCE",
+            "levels": [{"kind": "entry", "lowerPrice": 115, "upperPrice": 125}],
+        },
+        headers=headers,
+    )
+    assert watchlist.status_code == 201
+
+    refreshed = client.post("/holdings/fetch-all", headers=headers)
+    assert refreshed.status_code == 200
+
+    item = client.get("/watchlist", headers=headers).json()[0]
+    assert item["currentLtp"] == 120.0
+    assert item["lastUpdated"] is not None
+    alerts = client.get("/alerts", headers=headers).json()
+    assert len(alerts) == 1
+    assert alerts[0]["kind"] == "entry-reached"
+    assert alerts[0]["watchlistItemId"] == item["id"]
+
+
 def test_dashboard_snapshot(client, monkeypatch):
     def fake_ltps(symbols):
         prices = {"RELIANCE": 120.0, "TITAN": 120.0}

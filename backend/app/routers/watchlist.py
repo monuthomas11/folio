@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +10,7 @@ from yfinance_service import fetch_ltp, fetch_ltps
 from .. import models, schemas
 from ..database import get_db
 from ..security import get_current_user
+from ..services.watchlist import evaluate_watchlist_item, update_watchlist_items
 
 router = APIRouter(prefix="/watchlist", tags=["watchlist"])
 
@@ -56,55 +56,8 @@ def _add_levels(item: models.WatchlistItem, levels: list[schemas.WatchlistLevelI
     ]
 
 
-def _is_triggered(level: models.WatchlistLevel, ltp: float) -> bool:
-    if level.upper_price is not None:
-        return float(level.lower_price) <= ltp <= float(level.upper_price)
-    if level.kind == "target":
-        return ltp >= float(level.lower_price)
-    return ltp <= float(level.lower_price)
-
-
-def _alert_kind(level: models.WatchlistLevel) -> str:
-    return {
-        "entry": "entry-reached",
-        "target": "target-reached",
-        "stop-loss": "stop-loss-hit",
-        "invalidation": "invalidation-hit",
-    }[level.kind]
-
-
-def _level_text(level: models.WatchlistLevel) -> str:
-    if level.upper_price is None:
-        return f"₹{float(level.lower_price):.2f}"
-    return f"₹{float(level.lower_price):.2f}–₹{float(level.upper_price):.2f}"
-
-
 def _evaluate_item(db: Session, item: models.WatchlistItem) -> None:
-    if item.current_ltp is None:
-        return
-    ltp = float(item.current_ltp)
-    for level in item.levels:
-        triggered = _is_triggered(level, ltp)
-        if triggered and not level.condition_met:
-            kind = _alert_kind(level)
-            verb = {
-                "entry": "reached an entry level",
-                "target": "reached a target",
-                "stop-loss": "hit a stop-loss",
-                "invalidation": "hit an invalidation level",
-            }[level.kind]
-            db.add(
-                models.WatchlistAlert(
-                    user_id=item.user_id,
-                    watchlist_item_id=item.id,
-                    watchlist_level_id=level.id,
-                    symbol=item.symbol,
-                    kind=kind,
-                    price=item.current_ltp,
-                    message=f"{item.symbol} {verb} at ₹{ltp:.2f} ({_level_text(level)})",
-                )
-            )
-        level.condition_met = triggered
+    evaluate_watchlist_item(db, item)
 
 
 @router.get("", response_model=list[schemas.WatchlistOut])
@@ -203,14 +156,7 @@ def _owned_items_for_symbol(db: Session, user: models.User, symbol: str) -> list
 
 
 def _update_items(items: list[models.WatchlistItem], prices: dict[str, float], db: Session) -> None:
-    now = datetime.now(timezone.utc)
-    for item in items:
-        price = prices.get(item.symbol)
-        if price is None:
-            continue
-        item.current_ltp = price
-        item.last_updated = now
-        _evaluate_item(db, item)
+    update_watchlist_items(db, items, prices)
 
 
 @router.post("/fetch-price/{symbol}", response_model=schemas.PriceOut)
