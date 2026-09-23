@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import settings
@@ -21,11 +22,20 @@ connect_args = (
     {"check_same_thread": False} if _resolved_url.startswith("sqlite") else {}
 )
 
-engine = create_engine(
-    _resolved_url,
-    connect_args=connect_args,
-    pool_pre_ping=True,
-)
+engine_kwargs = {
+    "connect_args": connect_args,
+    "pool_pre_ping": True,
+}
+
+if _resolved_url.startswith("postgresql"):
+    engine_kwargs.update(
+        {
+            "pool_recycle": 300,
+            "pool_use_lifo": True,
+        }
+    )
+
+engine = create_engine(_resolved_url, **engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -35,4 +45,7 @@ def get_db():
     try:
         yield db
     finally:
-        db.close()
+        try:
+            db.close()
+        except DBAPIError:
+            db.invalidate()
