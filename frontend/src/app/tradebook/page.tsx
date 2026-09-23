@@ -32,13 +32,13 @@ function PnlValue({ value }: { value: number | null }) {
 }
 
 interface TradeFormProps {
+  open: boolean;
   editing: Trade | null;
   onSaved: (input: TradeInput, id?: string) => Promise<void>;
   onCancel: () => void;
 }
 
-function TradeForm({ editing, onSaved, onCancel }: TradeFormProps) {
-  const [open, setOpen] = useState(Boolean(editing));
+function TradeForm({ open, editing, onSaved, onCancel }: TradeFormProps) {
   const [form, setForm] = useState<TradeInput>(EMPTY_TRADE);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -54,7 +54,6 @@ function TradeForm({ editing, onSaved, onCancel }: TradeFormProps) {
         broker: editing.broker,
         notes: editing.notes,
       });
-      setOpen(true);
       setError(null);
     }
   }, [editing]);
@@ -64,7 +63,6 @@ function TradeForm({ editing, onSaved, onCancel }: TradeFormProps) {
   };
 
   const close = () => {
-    setOpen(false);
     setForm(EMPTY_TRADE);
     setError(null);
     onCancel();
@@ -87,9 +85,7 @@ function TradeForm({ editing, onSaved, onCancel }: TradeFormProps) {
     }
   }
 
-  if (!open) {
-    return <Button onClick={() => setOpen(true)}><IconPlus width={15} height={15} /> Add trade</Button>;
-  }
+  if (!open) return null;
 
   return (
     <form className={styles.form} onSubmit={submit}>
@@ -195,6 +191,7 @@ export default function TradebookPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Trade | null>(null);
+  const [tradeFormOpen, setTradeFormOpen] = useState(false);
   const [exitTarget, setExitTarget] = useState<Trade | null>(null);
 
   const load = useCallback(async (silent = false) => {
@@ -212,14 +209,16 @@ export default function TradebookPage() {
   const recordExit = useCallback(async (input: TradeExitInput) => { if (!exitTarget) return; await api.exitTrade(exitTarget.id, input); setExitTarget(null); await load(true); }, [exitTarget, load]);
   const refresh = async () => { setRefreshing(true); setError(null); try { const data = await api.refreshTradebook(); setTrades(data.trades); setSummary(data.summary); } catch (err) { setError(err instanceof Error ? err.message : "Price refresh failed."); } finally { setRefreshing(false); } };
   const active = useMemo(() => trades.filter((trade) => trade.status === "open").length, [trades]);
+  const closeTradeForm = () => { setEditing(null); setTradeFormOpen(false); };
 
   return (
     <AppShell>
-      <header className={styles.pageHeader}><div><h1 className={styles.pageTitle}>Tradebook</h1><p className={styles.pageSubtitle}>A clear record of every long and short trade you have taken.</p></div><div className={styles.headerActions}><Button variant="secondary" onClick={() => void refresh()} loading={refreshing} disabled={loading || active === 0}><IconRefresh width={15} height={15} />{refreshing ? "Refreshing" : "Refresh prices"}</Button><TradeForm editing={editing} onSaved={saveTrade} onCancel={() => setEditing(null)} /></div></header>
+      <header className={styles.pageHeader}><div><h1 className={styles.pageTitle}>Tradebook</h1><p className={styles.pageSubtitle}>A clear record of every long and short trade you have taken.</p></div><div className={styles.headerActions}><Button variant="secondary" onClick={() => void refresh()} loading={refreshing} disabled={loading || active === 0}><IconRefresh width={15} height={15} />{refreshing ? "Refreshing" : "Refresh prices"}</Button><Button onClick={() => { setEditing(null); setTradeFormOpen(true); }}><IconPlus width={15} height={15} /> Add trade</Button></div></header>
       {error && <div className={styles.error} role="alert"><span>{error}</span><button type="button" onClick={() => void load()}>Retry</button></div>}
       {summary && <section className={styles.summary} aria-label="Tradebook summary"><div><span>Realized P/L</span><strong><PnlValue value={summary.realizedPnl} /></strong></div><div><span>Unrealized P/L</span><strong><PnlValue value={summary.unrealizedPnl} /></strong></div><div><span>Total P/L</span><strong><PnlValue value={summary.totalPnl} /></strong></div><div><span>Trades</span><strong>{summary.tradeCount}</strong><small>{summary.openCount} open · {summary.closedCount} closed</small></div></section>}
       {summary?.unpricedOpenCount ? <p className={styles.pendingNote}>Refresh prices to complete P/L for {summary.unpricedOpenCount} open {summary.unpricedOpenCount === 1 ? "trade" : "trades"}.</p> : null}
-      {loading ? <div className={styles.skeleton}><Skeleton width="9rem" height="1.2rem" /><Skeleton height="15rem" radius="var(--radius-lg)" /></div> : trades.length === 0 ? <div className={styles.empty}><h2>Your Tradebook is empty</h2><p>Record your first long or short equity trade to start tracking realized and unrealized P/L.</p><TradeForm editing={editing} onSaved={saveTrade} onCancel={() => setEditing(null)} /></div> : <section className={styles.list} aria-label="Trade history"><div className={styles.listHeader}><h2>All trades</h2><span>{trades.length} {trades.length === 1 ? "trade" : "trades"}</span></div>{trades.map((trade) => <TradeRow key={trade.id} trade={trade} onEdit={setEditing} onDelete={removeTrade} onExit={setExitTarget} />)}</section>}
+      {tradeFormOpen && <TradeForm open editing={editing} onSaved={saveTrade} onCancel={closeTradeForm} />}
+      {loading ? <div className={styles.skeleton}><Skeleton width="9rem" height="1.2rem" /><Skeleton height="15rem" radius="var(--radius-lg)" /></div> : trades.length === 0 ? <div className={styles.empty}><h2>Your Tradebook is empty</h2><p>Record your first long or short equity trade to start tracking realized and unrealized P/L.</p></div> : <section className={styles.list} aria-label="Trade history"><div className={styles.listHeader}><h2>All trades</h2><span>{trades.length} {trades.length === 1 ? "trade" : "trades"}</span></div>{trades.map((trade) => <TradeRow key={trade.id} trade={trade} onEdit={(tradeToEdit) => { setEditing(tradeToEdit); setTradeFormOpen(true); }} onDelete={removeTrade} onExit={setExitTarget} />)}</section>}
       {exitTarget && <ExitDialog trade={exitTarget} onClose={() => setExitTarget(null)} onSubmit={recordExit} />}
     </AppShell>
   );
