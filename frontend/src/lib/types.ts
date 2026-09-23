@@ -100,6 +100,67 @@ export interface PortfolioSnapshot {
   realizedExits: HoldingExit[];
 }
 
+export type TradeSide = "long" | "short";
+export type TradeStatus = "open" | "closed";
+
+export interface TradeExit {
+  id: string;
+  quantity: number;
+  exitPrice: number;
+  exitDate: string;
+  realizedPnl: number;
+}
+
+export interface Trade {
+  id: string;
+  symbol: string;
+  side: TradeSide;
+  entryDate: string;
+  entryQuantity: number;
+  entryPrice: number;
+  broker: string | null;
+  notes: string | null;
+  currentLtp: number | null;
+  lastUpdated: string | null;
+  remainingQuantity: number;
+  status: TradeStatus;
+  realizedPnl: number;
+  unrealizedPnl: number | null;
+  totalPnl: number | null;
+  exits: TradeExit[];
+}
+
+export interface TradeInput {
+  symbol: string;
+  side: TradeSide;
+  entryDate: string;
+  entryQuantity: number;
+  entryPrice: number;
+  broker: string | null;
+  notes: string | null;
+}
+
+export interface TradeExitInput {
+  quantity: number;
+  exitPrice: number;
+  exitDate: string;
+}
+
+export interface TradebookSummary {
+  tradeCount: number;
+  openCount: number;
+  closedCount: number;
+  realizedPnl: number;
+  unrealizedPnl: number | null;
+  totalPnl: number | null;
+  unpricedOpenCount: number;
+}
+
+export interface TradebookData {
+  summary: TradebookSummary;
+  trades: Trade[];
+}
+
 export type WatchlistLevelKind = "entry" | "target" | "stop-loss" | "invalidation";
 
 export interface WatchlistLevel {

@@ -9,6 +9,10 @@ import type {
   Holding,
   HoldingsInput,
   HoldingExit,
+  Trade,
+  TradebookData,
+  TradeExitInput,
+  TradeInput,
   ImportResult,
   InvestmentProfile,
   InvestmentProfileInput,
@@ -208,6 +212,16 @@ export const api = {
     return request<AnalysisRunDetail>(`/analysis/${runId}`);
   },
 
+  async getActiveRun(): Promise<AnalysisRun | null> {
+    return request<AnalysisRun | null>("/analysis/active");
+  },
+
+  async cancelActiveRun(): Promise<AnalysisRun | null> {
+    return request<AnalysisRun | null>("/analysis/active/cancel", {
+      method: "POST",
+    });
+  },
+
   async getLatestHoldingAnalysis(holdingId: string): Promise<Recommendation | null> {
     try {
       return await request<Recommendation>(
@@ -288,6 +302,30 @@ export const api = {
   async refreshWatchlistSymbol(symbol: string): Promise<void> {
     await request(`/watchlist/fetch-price/${encodeURIComponent(symbol)}`, { method: "POST" });
   },
+
+  async getTradebook(): Promise<TradebookData> {
+    return request<TradebookData>("/tradebook");
+  },
+
+  async addTrade(input: TradeInput): Promise<Trade> {
+    return request<Trade>("/tradebook", { method: "POST", body: input });
+  },
+
+  async updateTrade(id: string, input: TradeInput): Promise<Trade> {
+    return request<Trade>(`/tradebook/${id}`, { method: "PUT", body: input });
+  },
+
+  async deleteTrade(id: string): Promise<void> {
+    return request<void>(`/tradebook/${id}`, { method: "DELETE" });
+  },
+
+  async exitTrade(id: string, input: TradeExitInput): Promise<Trade> {
+    return request<Trade>(`/tradebook/${id}/exits`, { method: "POST", body: input });
+  },
+
+  async refreshTradebook(): Promise<TradebookData> {
+    return request<TradebookData>("/tradebook/fetch-all", { method: "POST" });
+  },
 };
 
 export interface RunStatus {
@@ -301,10 +339,14 @@ export async function pollRun(
   onUpdate: (status: RunStatus) => void,
   timeoutMs = 1800000,
   intervalMs = 2000,
+  signal?: AbortSignal,
 ): Promise<AnalysisRunDetail> {
   const deadline = Date.now() + timeoutMs;
   let last: AnalysisRunDetail;
   for (;;) {
+    if (signal?.aborted) {
+      throw new ApiError("Analysis cancelled.", 0);
+    }
     last = await api.getAnalysisRun(runId);
     onUpdate({
       status: last.status,
@@ -321,6 +363,20 @@ export async function pollRun(
     if (Date.now() >= deadline) {
       throw new ApiError("Analysis timed out. Try again shortly.", 0);
     }
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, intervalMs);
+      const onAbort = () => {
+        clearTimeout(timer);
+        reject(new ApiError("Analysis cancelled.", 0));
+      };
+      if (signal?.aborted) {
+        onAbort();
+        return;
+      }
+      signal?.addEventListener("abort", onAbort, { once: true });
+    });
   }
 }

@@ -498,6 +498,7 @@ export default function HoldingDetailPage() {
             disabled={!holding.currentLtp}
             onComplete={handleComplete}
             onError={(message) => setError(message)}
+            onCancelled={() => setError(null)}
           />
         </div>
       </header>

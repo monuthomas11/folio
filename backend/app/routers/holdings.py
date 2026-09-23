@@ -16,6 +16,7 @@ from ..database import get_db
 from ..security import get_current_user
 from ..services.alerts import evaluate_and_create_alerts
 from ..services.watchlist import update_watchlist_items
+from .tradebook import update_trade_prices
 
 router = APIRouter(prefix="/holdings", tags=["holdings"])
 
@@ -369,7 +370,13 @@ def fetch_price(
             models.Holding.symbol == symbol.strip().upper(),
         )
     ).all()
-    if not holdings:
+    trades = db.scalars(
+        select(models.Trade).where(
+            models.Trade.user_id == user.id,
+            models.Trade.symbol == symbol.strip().upper(),
+        )
+    ).all()
+    if not holdings and not trades:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No holding with this symbol",
@@ -396,6 +403,7 @@ def fetch_price(
             holding.sector = sector
         holding.last_updated = now
         evaluate_and_create_alerts(db, holding)
+    update_trade_prices(db, user.id, {symbol.strip().upper(): ltp}, now)
     watchlist_items = db.scalars(
         select(models.WatchlistItem)
         .options(selectinload(models.WatchlistItem.levels))
@@ -423,15 +431,19 @@ def fetch_all_prices(
     holdings = db.scalars(
         select(models.Holding).where(models.Holding.user_id == user.id)
     ).all()
+    trades = db.scalars(
+        select(models.Trade).where(models.Trade.user_id == user.id)
+    ).all()
     watchlist_items = db.scalars(
         select(models.WatchlistItem)
         .options(selectinload(models.WatchlistItem.levels))
         .where(models.WatchlistItem.user_id == user.id)
     ).all()
-    if not holdings and not watchlist_items:
+    if not holdings and not watchlist_items and not trades:
         return []
 
     symbols = {h.symbol for h in holdings} | {item.symbol for item in watchlist_items}
+    symbols |= {trade.symbol for trade in trades if trade.entry_quantity > 0}
     prices, changes, errors = fetch_price_data(symbols)
     if not prices and errors:
         raise HTTPException(
@@ -457,6 +469,7 @@ def fetch_all_prices(
             holding.sector = sectors[holding.symbol]
         holding.last_updated = now
         evaluate_and_create_alerts(db, holding)
+    update_trade_prices(db, user.id, prices, now)
     update_watchlist_items(db, watchlist_items, prices, now)
     db.commit()
 

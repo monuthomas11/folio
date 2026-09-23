@@ -9,6 +9,7 @@ import {
   IconBookmark,
   IconBriefcase,
   IconClose,
+  IconActivity,
   IconGrid,
   IconLogout,
   IconMenu,
@@ -31,6 +32,7 @@ interface AppShellProps {
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: IconGrid },
   { href: "/portfolio", label: "Portfolio", icon: IconBriefcase },
+  { href: "/tradebook", label: "Tradebook", icon: IconActivity },
   { href: "/watchlist", label: "Watchlist", icon: IconBookmark },
   { href: "/alerts", label: "Alerts", icon: IconBell },
   { href: "/ai", label: "AI Advisor", icon: IconSparkles },

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from .config import settings
 from .database import Base, engine, get_db
-from .routers import alerts, analysis, auth, holdings, integrations, watchlist
+from .routers import alerts, analysis, auth, holdings, integrations, tradebook, watchlist
 from .security import get_current_user
 
 
@@ -88,6 +88,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(holdings.router)
+    app.include_router(tradebook.router)
     app.include_router(alerts.router)
     app.include_router(watchlist.router)
     app.include_router(integrations.router)

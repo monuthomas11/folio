@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from typing import Literal
 
@@ -84,6 +84,67 @@ class HoldingExitOut(APIModel):
     realized_pnl: float
     broker: str | None
     exited_at: datetime
+
+
+TradeSide = Literal["long", "short"]
+
+
+class TradeIn(APIModel):
+    symbol: str = Field(min_length=1, max_length=20)
+    side: TradeSide
+    entry_date: date
+    entry_quantity: float = Field(gt=0)
+    entry_price: float = Field(gt=0)
+    broker: str | None = Field(default=None, max_length=100)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class TradeExitIn(APIModel):
+    quantity: float = Field(gt=0)
+    exit_price: float = Field(gt=0)
+    exit_date: date
+
+
+class TradeExitOut(APIModel):
+    id: uuid.UUID
+    quantity: float
+    exit_price: float
+    exit_date: date
+    realized_pnl: float
+
+
+class TradeOut(APIModel):
+    id: uuid.UUID
+    symbol: str
+    side: TradeSide
+    entry_date: date
+    entry_quantity: float
+    entry_price: float
+    broker: str | None
+    notes: str | None
+    current_ltp: float | None
+    last_updated: datetime | None
+    remaining_quantity: float
+    status: Literal["open", "closed"]
+    realized_pnl: float
+    unrealized_pnl: float | None
+    total_pnl: float | None
+    exits: list[TradeExitOut]
+
+
+class TradebookSummaryOut(APIModel):
+    trade_count: int
+    open_count: int
+    closed_count: int
+    realized_pnl: float
+    unrealized_pnl: float | None
+    total_pnl: float | None
+    unpriced_open_count: int
+
+
+class TradebookOut(APIModel):
+    summary: TradebookSummaryOut
+    trades: list[TradeOut]
 
 
 class PriceOut(APIModel):

@@ -277,6 +277,7 @@ export default function AiPage() {
             kind="portfolio"
             onComplete={handleComplete}
             onError={(message) => setError(message)}
+            onCancelled={() => setError(null)}
           />
         </div>
       </header>

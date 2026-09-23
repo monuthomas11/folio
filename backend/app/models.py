@@ -1,10 +1,11 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
+    Date,
     ForeignKey,
     Integer,
     Numeric,
@@ -47,6 +48,12 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     holding_exits: Mapped[list["HoldingExit"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    trades: Mapped[list["Trade"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    trade_exits: Mapped[list["TradeExit"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
     api_keys: Mapped[list["APIKey"]] = relationship(
@@ -101,6 +108,51 @@ class HoldingExit(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="holding_exits")
+
+
+class Trade(Base):
+    __tablename__ = "trades"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(20), index=True)
+    side: Mapped[str] = mapped_column(String(10))
+    entry_date: Mapped[date] = mapped_column(Date)
+    entry_quantity: Mapped[float] = mapped_column(Numeric(10, 3))
+    entry_price: Mapped[float] = mapped_column(Numeric(12, 4))
+    broker: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_ltp: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
+    last_updated: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="trades")
+    exits: Mapped[list["TradeExit"]] = relationship(
+        back_populates="trade", cascade="all, delete-orphan", order_by="TradeExit.exit_date.desc()"
+    )
+
+
+class TradeExit(Base):
+    __tablename__ = "trade_exits"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    trade_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("trades.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(10, 3))
+    exit_price: Mapped[float] = mapped_column(Numeric(12, 4))
+    exit_date: Mapped[date] = mapped_column(Date)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    trade: Mapped[Trade] = relationship(back_populates="exits")
+    user: Mapped[User] = relationship(back_populates="trade_exits")
 
 
 class Alert(Base):
