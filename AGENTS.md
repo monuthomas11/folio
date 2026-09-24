@@ -71,7 +71,11 @@ Open `http://localhost:3000`, register an account, add a holding, then use **Ref
 ## Environment Variables
 
 Backend `.env`: `DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM=HS256`, `ACCESS_TOKEN_EXPIRE_MINUTES`
-Frontend `.env.local`: `NEXT_PUBLIC_API_URL`
+Frontend `.env.local`: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_HEARTBEAT_TIMEOUT_MINUTES=60`
+
+`NEXT_PUBLIC_HEARTBEAT_TIMEOUT_MINUTES` controls how long the authenticated browser heartbeat
+continues after the last activity. Invalid or non-positive values fall back to 60 minutes.
+Because this is a public Next.js environment variable, changes require a frontend rebuild/redeploy.
 
 AI analyzer env vars (backend `.env`, see `Analyzer-Implementation-Plan.md`): `LLM_PROVIDER=mock` is the
 offline default (no key needed); `OPENAI_API_KEY`/`OPENAI_BASE_URL`/`OPENAI_MODEL`,

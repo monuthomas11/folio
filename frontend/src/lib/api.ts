@@ -67,6 +67,7 @@ interface RequestOptions {
   method?: string;
   body?: unknown;
   token?: string | null;
+  cache?: RequestCache;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -81,6 +82,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       method: options.method ?? "GET",
       headers,
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      cache: options.cache,
     });
   } catch {
     throw new ApiError("Could not reach the server. Is the backend running?", 0);
@@ -141,6 +143,10 @@ export const auth = {
 };
 
 export const api = {
+  async health(): Promise<void> {
+    await request<void>("/health", { token: null, cache: "no-store" });
+  },
+
   async getSnapshot(): Promise<PortfolioSnapshot> {
     return request<PortfolioSnapshot>("/dashboard");
   },

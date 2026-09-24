@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { auth, clearSession, getStoredUser } from "@/lib/api";
+import { useKeepAlive } from "@/lib/keep-alive";
 import type { AuthUser } from "@/lib/types";
 
 interface AuthContextValue {
@@ -27,6 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<"loading" | "authenticated" | "guest">(
     "loading",
   );
+
+  useKeepAlive(status === "authenticated");
 
   useEffect(() => {
     const stored = getStoredUser();
