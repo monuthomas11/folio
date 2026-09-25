@@ -144,6 +144,7 @@ export interface TradeExitInput {
   quantity: number;
   exitPrice: number;
   exitDate: string;
+  notes: string | null;
 }
 
 export interface TradebookSummary {

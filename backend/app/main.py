@@ -1,12 +1,12 @@
 from fastapi import Depends, FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import inspect, select, text
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .config import settings
-from .database import Base, engine, get_db
+from .database import Base, SessionLocal, engine, get_db
 from .routers import alerts, analysis, auth, holdings, integrations, tradebook, watchlist
 from .security import get_current_user
 
@@ -44,10 +44,50 @@ def _migrate_postgres() -> None:
         )
 
 
+def _deduplicate_recommendations() -> None:
+    with SessionLocal() as db:
+        duplicate_keys = db.execute(
+            select(
+                models.Recommendation.user_id,
+                models.Recommendation.kind,
+                models.Recommendation.holding_id,
+            )
+            .where(models.Recommendation.kind.in_(["holding", "portfolio"]))
+            .group_by(
+                models.Recommendation.user_id,
+                models.Recommendation.kind,
+                models.Recommendation.holding_id,
+            )
+            .having(func.count(models.Recommendation.id) > 1)
+        ).all()
+
+        for user_id, kind, holding_id in duplicate_keys:
+            query = select(models.Recommendation).where(
+                models.Recommendation.user_id == user_id,
+                models.Recommendation.kind == kind,
+            )
+            if holding_id is None:
+                query = query.where(models.Recommendation.holding_id.is_(None))
+            else:
+                query = query.where(models.Recommendation.holding_id == holding_id)
+            recommendations = db.scalars(
+                query.order_by(
+                    models.Recommendation.created_at.desc(),
+                    models.Recommendation.id.desc(),
+                )
+            ).all()
+            for stale in recommendations[1:]:
+                db.delete(stale)
+
+        if duplicate_keys:
+            db.commit()
+
+
 def create_app() -> FastAPI:
     Base.metadata.create_all(bind=engine)
     _migrate_sqlite()
     _migrate_postgres()
+    _deduplicate_recommendations()
 
     app = FastAPI(
         title="Folio API",

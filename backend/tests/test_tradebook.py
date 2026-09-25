@@ -33,7 +33,12 @@ def test_long_trade_partial_exit_and_totals(client):
 
     exit_response = client.post(
         f"/tradebook/{trade['id']}/exits",
-        json={"quantity": 4, "exitPrice": 120, "exitDate": "2026-01-20"},
+        json={
+            "quantity": 4,
+            "exitPrice": 120,
+            "exitDate": "2026-01-20",
+            "notes": "Took partial profits at resistance",
+        },
         headers=headers,
     )
     assert exit_response.status_code == 201, exit_response.text
@@ -41,6 +46,7 @@ def test_long_trade_partial_exit_and_totals(client):
     assert row["remainingQuantity"] == 6.0
     assert row["realizedPnl"] == 80.0
     assert row["unrealizedPnl"] is None
+    assert row["notes"] == "Took partial profits at resistance"
 
     listing = client.get("/tradebook", headers=headers)
     assert listing.status_code == 200

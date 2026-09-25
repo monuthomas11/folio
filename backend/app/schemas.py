@@ -103,6 +103,7 @@ class TradeExitIn(APIModel):
     quantity: float = Field(gt=0)
     exit_price: float = Field(gt=0)
     exit_date: date
+    notes: str | None = Field(default=None, max_length=2000)
 
 
 class TradeExitOut(APIModel):

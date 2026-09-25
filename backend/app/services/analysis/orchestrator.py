@@ -136,42 +136,66 @@ def _persist_recommendation(
     if not isinstance(fair, dict):
         fair = None
 
-    rec = models.Recommendation(
-        run_id=run.id,
-        user_id=run.user_id,
-        holding_id=holding.id if holding else None,
-        kind=kind,
-        symbol=symbol,
-        rating=str(output.get("rating") or "HOLD"),
-        action=str(output.get("action") or "HOLD_MONITOR"),
-        confidence=output.get("confidence"),
-        scores=scores,
-        portfolio_weight=portfolio_weight,
-        thesis_status=output.get("thesis_status"),
-        summary=str(output.get("summary") or ""),
-        why=output.get("why"),
-        bull_case=output.get("bull_case"),
-        base_case=output.get("base_case"),
-        bear_case=output.get("bear_case"),
-        key_reasons=_str_list(output.get("key_reasons")),
-        key_risks=_str_list(output.get("key_risks")),
-        buy_conditions=_str_list(output.get("buy_conditions")),
-        reduce_conditions=_str_list(output.get("reduce_conditions")),
-        exit_conditions=_str_list(output.get("exit_conditions")),
-        support_levels=_float_list(output.get("support_levels")),
-        resistance_levels=_float_list(output.get("resistance_levels")),
-        fair_value_range=fair,
-        evidence_ids=_str_list(output.get("evidence_ids")),
-        evidence=evidence_items,
-        data_quality=str(output.get("_data_quality") or "MODERATE"),
-        quality_flags=_str_list(output.get("_quality_flags") or quality_flags),
-        health_score=output.get("health_score"),
-        positives=_str_list(output.get("positives")),
-        concerns=_str_list(output.get("concerns")),
-        priority_note=output.get("priority"),
-        analysis_timestamps=analysis_timestamps,
+    recommendation_values = {
+        "run_id": run.id,
+        "user_id": run.user_id,
+        "holding_id": holding.id if holding else None,
+        "kind": kind,
+        "symbol": symbol,
+        "rating": str(output.get("rating") or "HOLD"),
+        "action": str(output.get("action") or "HOLD_MONITOR"),
+        "confidence": output.get("confidence"),
+        "scores": scores,
+        "portfolio_weight": portfolio_weight,
+        "thesis_status": output.get("thesis_status"),
+        "summary": str(output.get("summary") or ""),
+        "why": output.get("why"),
+        "bull_case": output.get("bull_case"),
+        "base_case": output.get("base_case"),
+        "bear_case": output.get("bear_case"),
+        "key_reasons": _str_list(output.get("key_reasons")),
+        "key_risks": _str_list(output.get("key_risks")),
+        "buy_conditions": _str_list(output.get("buy_conditions")),
+        "reduce_conditions": _str_list(output.get("reduce_conditions")),
+        "exit_conditions": _str_list(output.get("exit_conditions")),
+        "support_levels": _float_list(output.get("support_levels")),
+        "resistance_levels": _float_list(output.get("resistance_levels")),
+        "fair_value_range": fair,
+        "evidence_ids": _str_list(output.get("evidence_ids")),
+        "evidence": evidence_items,
+        "data_quality": str(output.get("_data_quality") or "MODERATE"),
+        "quality_flags": _str_list(output.get("_quality_flags") or quality_flags),
+        "health_score": output.get("health_score"),
+        "positives": _str_list(output.get("positives")),
+        "concerns": _str_list(output.get("concerns")),
+        "priority_note": output.get("priority"),
+        "analysis_timestamps": analysis_timestamps,
+    }
+
+    query = select(models.Recommendation).where(
+        models.Recommendation.user_id == run.user_id,
+        models.Recommendation.kind == kind,
     )
-    session.add(rec)
+    if holding is None:
+        query = query.where(models.Recommendation.holding_id.is_(None))
+    else:
+        query = query.where(models.Recommendation.holding_id == holding.id)
+    existing = session.scalars(
+        query.order_by(
+            models.Recommendation.created_at.desc(),
+            models.Recommendation.id.desc(),
+        )
+    ).all()
+
+    if existing:
+        rec = existing[0]
+        for stale in existing[1:]:
+            session.delete(stale)
+        for field, value in recommendation_values.items():
+            setattr(rec, field, value)
+    else:
+        rec = models.Recommendation(**recommendation_values)
+        session.add(rec)
     session.commit()
     return rec
 

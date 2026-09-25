@@ -1,10 +1,14 @@
 import time
+import uuid
 from datetime import date, timedelta
 
 import pytest
+from sqlalchemy import select
 
 from .conftest import auth_headers
 
+from app import models
+from app.database import SessionLocal
 from app.services.analysis import orchestrator
 from app.services.fundamentals.base import FundamentalsSnapshot
 from app.services.market_data.base import OHLCV
@@ -132,6 +136,54 @@ def test_holding_analysis_flow(client):
     assert rec["bullCase"] and rec["bearCase"]
     assert rec["evidenceIds"]
     assert rec["dataQuality"] in ("EXCELLENT", "GOOD", "MODERATE", "POOR")
+
+
+def test_holding_recommendation_is_updated_in_place(client):
+    token = _register(client)
+    headers = auth_headers(token)
+    holding = _add_holding(client, headers)
+
+    r = client.post(f"/analysis/holding/{holding['id']}", headers=headers)
+    assert r.status_code == 202
+    run_id = r.json()["runId"]
+    run = _poll_run(client, headers, run_id)
+    assert run["status"] == "COMPLETED"
+
+    with SessionLocal() as db:
+        persisted_run = db.get(models.AnalysisRun, uuid.UUID(run_id))
+        persisted_holding = db.get(models.Holding, uuid.UUID(holding["id"]))
+        assert persisted_run is not None
+        assert persisted_holding is not None
+
+        first = db.scalar(
+            select(models.Recommendation).where(
+                models.Recommendation.holding_id == persisted_holding.id,
+                models.Recommendation.kind == "holding",
+            )
+        )
+        assert first is not None
+
+        updated = orchestrator._persist_recommendation(
+            db,
+            persisted_run,
+            persisted_holding,
+            "holding",
+            persisted_holding.symbol,
+            {"rating": "REDUCE", "summary": "Updated recommendation"},
+            [],
+            {"generated_at": "updated"},
+        )
+
+        rows = db.scalars(
+            select(models.Recommendation).where(
+                models.Recommendation.holding_id == persisted_holding.id,
+                models.Recommendation.kind == "holding",
+            )
+        ).all()
+        assert len(rows) == 1
+        assert updated.id == first.id
+        assert updated.rating == "REDUCE"
+        assert updated.summary == "Updated recommendation"
 
 
 def test_latest_holding_analysis_404_before_any_run(client):

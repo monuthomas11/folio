@@ -211,6 +211,8 @@ def add_trade_exit(
         raise HTTPException(status_code=422, detail=f"Exit quantity cannot exceed {float(remaining):g}")
     if payload.exit_date < trade.entry_date:
         raise HTTPException(status_code=422, detail="Exit date cannot be before entry date")
+    if "notes" in payload.model_fields_set:
+        trade.notes = payload.notes
     db.add(
         models.TradeExit(
             trade_id=trade.id,

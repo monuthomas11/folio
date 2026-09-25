@@ -121,6 +121,7 @@ function ExitDialog({ trade, onClose, onSubmit }: ExitDialogProps) {
   const [quantity, setQuantity] = useState(String(trade.remainingQuantity));
   const [price, setPrice] = useState(trade.currentLtp == null ? "" : String(trade.currentLtp));
   const [exitDate, setExitDate] = useState(today());
+  const [notes, setNotes] = useState(trade.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const estimated = Number(quantity) > 0 && Number(price) > 0
@@ -143,7 +144,7 @@ function ExitDialog({ trade, onClose, onSubmit }: ExitDialogProps) {
     if (!exitDate || exitDate < trade.entryDate) return setError("Exit date cannot be before entry date.");
     setSaving(true);
     setError(null);
-    try { await onSubmit({ quantity: numericQuantity, exitPrice: numericPrice, exitDate }); }
+    try { await onSubmit({ quantity: numericQuantity, exitPrice: numericPrice, exitDate, notes: notes || null }); }
     catch (err) { setError(err instanceof Error ? err.message : "Couldn’t record the exit."); setSaving(false); }
   }
 
@@ -153,7 +154,7 @@ function ExitDialog({ trade, onClose, onSubmit }: ExitDialogProps) {
         <div className={styles.formHeader}><div><p className={styles.dialogLabel}>{trade.side === "long" ? "Sell position" : "Cover position"}</p><h2 id="exit-title">Exit {trade.symbol}</h2><p>Record an exit lot. This locks the trade’s entry details.</p></div><button type="button" className={styles.closeButton} onClick={onClose} disabled={saving} aria-label="Close exit dialog"><IconClose width={17} height={17} /></button></div>
         <div className={styles.positionNote}><span>{formatQuantity(trade.remainingQuantity)} shares remain open</span><strong>Entry {formatPrice(trade.entryPrice)} · {formatDate(trade.entryDate)}</strong></div>
         <form className={styles.exitForm} onSubmit={submit}>
-          <div className={styles.formGrid}><label><span>Quantity</span><input autoFocus type="number" min="0.001" max={trade.remainingQuantity} step="0.001" value={quantity} onChange={(event) => setQuantity(event.target.value)} /></label><label><span>{trade.side === "long" ? "Exit price" : "Cover price"}</span><input type="number" min="0.01" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} /></label><label><span>Exit date</span><input type="date" min={trade.entryDate} value={exitDate} onChange={(event) => setExitDate(event.target.value)} /></label></div>
+          <div className={styles.formGrid}><label><span>Quantity</span><input autoFocus type="number" min="0.001" max={trade.remainingQuantity} step="0.001" value={quantity} onChange={(event) => setQuantity(event.target.value)} /></label><label><span>{trade.side === "long" ? "Exit price" : "Cover price"}</span><input type="number" min="0.01" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} /></label><label><span>Exit date</span><input type="date" min={trade.entryDate} value={exitDate} onChange={(event) => setExitDate(event.target.value)} /></label><label className={styles.exitNotesField}><span>Notes</span><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Update the trade context while closing" rows={3} /></label></div>
           {estimated != null && <div className={`${styles.estimate} ${estimated >= 0 ? styles.estimateGain : styles.estimateLoss}`}><span>Estimated realized P/L</span><strong>{formatSignedINR(estimated)}</strong></div>}
           {error && <p className={styles.formError} role="alert">{error}</p>}
           <div className={styles.formActions}><Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button><Button type="submit" loading={saving}>Record exit</Button></div>

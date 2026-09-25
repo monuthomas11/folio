@@ -27,6 +27,7 @@
 .formGrid textarea { min-height: 42px; padding: var(--space-2) var(--space-3); resize: vertical; }
 .formGrid input:focus, .formGrid select:focus, .formGrid textarea:focus { outline: 2px solid var(--primary); outline-offset: 2px; border-color: var(--primary); }
 .notesField { grid-column: span 2; }
+.exitNotesField { grid-column: 1 / -1; }
 .formError { margin-top: var(--space-3); color: var(--loss); font-size: var(--text-sm); }
 .formActions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); }
 .list { display: flex; flex-direction: column; gap: var(--space-3); }
