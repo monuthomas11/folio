@@ -102,27 +102,105 @@ export interface PortfolioSnapshot {
 
 export type TradeSide = "long" | "short";
 export type TradeStatus = "open" | "closed";
+export type TradeAssetClass = "equity" | "fno";
+export type TradeInstrumentType = "equity" | "future" | "option";
+export type TradeExchange = "NSE" | "BSE";
+export type TradeUnderlyingType = "index" | "stock";
+export type TradeOptionType = "CE" | "PE";
+
+export interface TradeChargesInput {
+  brokerage: number | null;
+  sttCtt: number | null;
+  exchangeTransaction: number | null;
+  sebi: number | null;
+  gst: number | null;
+  stampDuty: number | null;
+  ipft: number | null;
+  other: number | null;
+  contractNoteRef: string | null;
+}
+
+export interface TradeCharges {
+  id: string;
+  legType: "entry" | "exit";
+  brokerage: number | null;
+  sttCtt: number | null;
+  exchangeTransaction: number | null;
+  sebi: number | null;
+  gst: number | null;
+  stampDuty: number | null;
+  ipft: number | null;
+  other: number | null;
+  contractNoteRef: string | null;
+  total: number | null;
+  complete: boolean;
+}
 
 export interface TradeExit {
   id: string;
   quantity: number;
+  exitLots: number | null;
   exitPrice: number;
   exitDate: string;
+  exitAt: string | null;
+  exitReason: string | null;
+  exitOrderId: string | null;
+  exitContractNoteRef: string | null;
+  notes: string | null;
   realizedPnl: number;
+  grossRealizedPnl: number;
+  netRealizedPnl: number | null;
+  charges: TradeCharges | null;
 }
 
 export interface Trade {
   id: string;
   symbol: string;
   side: TradeSide;
+  assetClass: TradeAssetClass;
+  instrumentType: TradeInstrumentType;
+  exchange: TradeExchange | null;
+  underlyingType: TradeUnderlyingType | null;
+  underlyingSymbol: string | null;
+  contractSymbol: string | null;
+  expiryDate: string | null;
+  strikePrice: number | null;
+  tickSize: number | null;
+  optionType: TradeOptionType | null;
+  lotSize: number | null;
+  entryLots: number | null;
+  remainingLots: number | null;
+  entryAt: string | null;
+  entryOrderId: string | null;
+  entryContractNoteRef: string | null;
+  strategy: string | null;
+  thesis: string | null;
+  settlementType: string | null;
+  productType: string | null;
+  marginUsed: number | null;
   entryDate: string;
   entryQuantity: number;
   entryPrice: number;
   broker: string | null;
   notes: string | null;
   currentLtp: number | null;
+  markSource: string | null;
   lastUpdated: string | null;
   remainingQuantity: number;
+  grossEntryValue: number;
+  grossRealizedPnl: number;
+  grossUnrealizedPnl: number | null;
+  grossTotalPnl: number | null;
+  netRealizedPnl: number | null;
+  netUnrealizedPnl: number | null;
+  netTotalPnl: number | null;
+  entryCharges: number | null;
+  entryCharge: TradeCharges | null;
+  exitCharges: number | null;
+  totalCharges: number | null;
+  chargesComplete: boolean;
+  capitalBasis: number | null;
+  openExposure: number | null;
   status: TradeStatus;
   realizedPnl: number;
   unrealizedPnl: number | null;
@@ -133,18 +211,45 @@ export interface Trade {
 export interface TradeInput {
   symbol: string;
   side: TradeSide;
+  assetClass: TradeAssetClass;
+  instrumentType: TradeInstrumentType;
+  exchange: TradeExchange | null;
+  underlyingType: TradeUnderlyingType | null;
+  underlyingSymbol: string | null;
+  contractSymbol: string | null;
+  expiryDate: string | null;
+  strikePrice: number | null;
+  tickSize: number | null;
+  optionType: TradeOptionType | null;
+  lotSize: number | null;
+  entryLots: number | null;
+  productType: string | null;
+  entryAt: string | null;
+  entryOrderId: string | null;
+  entryContractNoteRef: string | null;
+  strategy: string | null;
+  thesis: string | null;
+  settlementType: string | null;
+  marginUsed: number | null;
   entryDate: string;
-  entryQuantity: number;
+  entryQuantity: number | null;
   entryPrice: number;
   broker: string | null;
   notes: string | null;
+  entryCharges: TradeChargesInput | null;
 }
 
 export interface TradeExitInput {
-  quantity: number;
+  quantity: number | null;
+  exitLots: number | null;
   exitPrice: number;
   exitDate: string;
+  exitAt: string | null;
+  exitReason: string | null;
+  exitOrderId: string | null;
+  exitContractNoteRef: string | null;
   notes: string | null;
+  charges: TradeChargesInput | null;
 }
 
 export interface TradebookSummary {
@@ -155,11 +260,27 @@ export interface TradebookSummary {
   unrealizedPnl: number | null;
   totalPnl: number | null;
   unpricedOpenCount: number;
+  grossRealizedPnl: number;
+  grossUnrealizedPnl: number | null;
+  grossTotalPnl: number | null;
+  netRealizedPnl: number | null;
+  netUnrealizedPnl: number | null;
+  netTotalPnl: number | null;
+  totalCharges: number | null;
+  openExposure: number | null;
+  incompleteChargeCount: number;
+  winRate: number | null;
 }
 
 export interface TradebookData {
   summary: TradebookSummary;
   trades: Trade[];
+  quoteErrors: { tradeId: string; symbol: string; message: string }[];
+}
+
+export interface TradeMarkInput {
+  ltp: number;
+  source: "manual" | "exchange";
 }
 
 export type WatchlistLevelKind = "entry" | "target" | "stop-loss" | "invalidation";

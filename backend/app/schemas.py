@@ -87,45 +87,188 @@ class HoldingExitOut(APIModel):
 
 
 TradeSide = Literal["long", "short"]
+AssetClass = Literal["equity", "fno"]
+InstrumentType = Literal["equity", "future", "option"]
+Exchange = Literal["NSE", "BSE"]
+UnderlyingType = Literal["index", "stock"]
+OptionType = Literal["CE", "PE"]
+
+
+class TradeChargesIn(APIModel):
+    brokerage: float | None = Field(default=None, ge=0)
+    stt_ctt: float | None = Field(default=None, ge=0)
+    exchange_transaction: float | None = Field(default=None, ge=0)
+    sebi: float | None = Field(default=None, ge=0)
+    gst: float | None = Field(default=None, ge=0)
+    stamp_duty: float | None = Field(default=None, ge=0)
+    ipft: float | None = Field(default=None, ge=0)
+    other: float | None = Field(default=None, ge=0)
+    contract_note_ref: str | None = Field(default=None, max_length=100)
+
+
+class TradeChargesOut(TradeChargesIn):
+    id: uuid.UUID
+    leg_type: Literal["entry", "exit"]
+    total: float | None
+    complete: bool
 
 
 class TradeIn(APIModel):
     symbol: str = Field(min_length=1, max_length=20)
     side: TradeSide
+    asset_class: AssetClass = "equity"
+    instrument_type: InstrumentType = "equity"
+    exchange: Exchange | None = None
+    underlying_type: UnderlyingType | None = None
+    underlying_symbol: str | None = Field(default=None, max_length=40)
+    contract_symbol: str | None = Field(default=None, max_length=100)
+    expiry_date: date | None = None
+    strike_price: float | None = Field(default=None, gt=0)
+    tick_size: float | None = Field(default=None, gt=0)
+    option_type: OptionType | None = None
+    lot_size: int | None = Field(default=None, gt=0)
+    entry_lots: int | None = Field(default=None, gt=0)
+    product_type: str | None = Field(default=None, max_length=20)
+    entry_at: datetime | None = None
+    entry_order_id: str | None = Field(default=None, max_length=100)
+    entry_contract_note_ref: str | None = Field(default=None, max_length=100)
+    strategy: str | None = Field(default=None, max_length=100)
+    thesis: str | None = Field(default=None, max_length=4000)
+    settlement_type: str | None = Field(default=None, max_length=20)
+    margin_used: float | None = Field(default=None, ge=0)
     entry_date: date
-    entry_quantity: float = Field(gt=0)
+    entry_quantity: float | None = Field(default=None, gt=0)
     entry_price: float = Field(gt=0)
     broker: str | None = Field(default=None, max_length=100)
     notes: str | None = Field(default=None, max_length=2000)
+    entry_charges: TradeChargesIn | None = None
+
+    @model_validator(mode="after")
+    def validate_trade_shape(self):
+        if self.asset_class == "equity":
+            if self.instrument_type != "equity":
+                raise ValueError("Equity trades must use the equity instrument type")
+            if self.entry_quantity is None:
+                raise ValueError("Equity trades require entry quantity")
+            return self
+
+        if self.side != "long":
+            raise ValueError("F&O currently supports long trades only")
+        if self.expiry_date is not None and self.expiry_date < self.entry_date:
+            raise ValueError("Expiry date cannot be before entry date")
+        if self.instrument_type not in {"future", "option"}:
+            raise ValueError("F&O trades must be futures or options")
+        required = {
+            "exchange": self.exchange,
+            "underlying_type": self.underlying_type,
+            "underlying_symbol": self.underlying_symbol,
+            "contract_symbol": self.contract_symbol,
+            "expiry_date": self.expiry_date,
+            "tick_size": self.tick_size,
+            "lot_size": self.lot_size,
+            "entry_lots": self.entry_lots,
+        }
+        if any(value in (None, "") for value in required.values()):
+            raise ValueError("F&O trades require exchange, underlying, contract, expiry, lot size, and lots")
+        if self.instrument_type == "option":
+            if self.strike_price is None or self.option_type is None:
+                raise ValueError("Options require strike price and option type")
+        elif self.strike_price is not None or self.option_type is not None:
+            raise ValueError("Futures cannot have strike price or option type")
+        if self.entry_quantity is not None:
+            expected = self.entry_lots * self.lot_size
+            if self.entry_quantity != expected:
+                raise ValueError("F&O quantity must equal lots multiplied by lot size")
+        return self
 
 
 class TradeExitIn(APIModel):
-    quantity: float = Field(gt=0)
+    quantity: float | None = Field(default=None, gt=0)
+    exit_lots: int | None = Field(default=None, gt=0)
     exit_price: float = Field(gt=0)
     exit_date: date
+    exit_at: datetime | None = None
+    exit_reason: str | None = Field(default=None, max_length=30)
+    exit_order_id: str | None = Field(default=None, max_length=100)
+    exit_contract_note_ref: str | None = Field(default=None, max_length=100)
     notes: str | None = Field(default=None, max_length=2000)
+    charges: TradeChargesIn | None = None
+
+
+class TradeMarkIn(APIModel):
+    ltp: float = Field(gt=0)
+    source: Literal["manual", "exchange"] = "manual"
+
+
+class TradeExitChargesIn(TradeChargesIn):
+    pass
 
 
 class TradeExitOut(APIModel):
     id: uuid.UUID
     quantity: float
+    exit_lots: int | None
     exit_price: float
     exit_date: date
+    exit_at: datetime | None
+    exit_reason: str | None
+    exit_order_id: str | None
+    exit_contract_note_ref: str | None
+    notes: str | None
     realized_pnl: float
+    gross_realized_pnl: float
+    net_realized_pnl: float | None
+    charges: TradeChargesOut | None
 
 
 class TradeOut(APIModel):
     id: uuid.UUID
     symbol: str
     side: TradeSide
+    asset_class: AssetClass
+    instrument_type: InstrumentType
+    exchange: Exchange | None
+    underlying_type: UnderlyingType | None
+    underlying_symbol: str | None
+    contract_symbol: str | None
+    expiry_date: date | None
+    strike_price: float | None
+    tick_size: float | None
+    option_type: OptionType | None
+    lot_size: int | None
+    entry_lots: int | None
+    remaining_lots: int | None
+    entry_at: datetime | None
+    entry_order_id: str | None
+    entry_contract_note_ref: str | None
+    strategy: str | None
+    thesis: str | None
+    settlement_type: str | None
+    product_type: str | None
+    margin_used: float | None
     entry_date: date
     entry_quantity: float
     entry_price: float
     broker: str | None
     notes: str | None
     current_ltp: float | None
+    mark_source: str | None
     last_updated: datetime | None
     remaining_quantity: float
+    gross_entry_value: float
+    gross_realized_pnl: float
+    gross_unrealized_pnl: float | None
+    gross_total_pnl: float | None
+    net_realized_pnl: float | None
+    net_unrealized_pnl: float | None
+    net_total_pnl: float | None
+    entry_charges: float | None
+    entry_charge: TradeChargesOut | None
+    exit_charges: float | None
+    total_charges: float | None
+    charges_complete: bool
+    capital_basis: float | None
+    open_exposure: float | None
     status: Literal["open", "closed"]
     realized_pnl: float
     unrealized_pnl: float | None
@@ -141,11 +284,28 @@ class TradebookSummaryOut(APIModel):
     unrealized_pnl: float | None
     total_pnl: float | None
     unpriced_open_count: int
+    gross_realized_pnl: float
+    gross_unrealized_pnl: float | None
+    gross_total_pnl: float | None
+    net_realized_pnl: float | None
+    net_unrealized_pnl: float | None
+    net_total_pnl: float | None
+    total_charges: float | None
+    open_exposure: float | None
+    incomplete_charge_count: int
+    win_rate: float | None
+
+
+class TradeQuoteErrorOut(APIModel):
+    trade_id: uuid.UUID
+    symbol: str
+    message: str
 
 
 class TradebookOut(APIModel):
     summary: TradebookSummaryOut
     trades: list[TradeOut]
+    quote_errors: list[TradeQuoteErrorOut] = []
 
 
 class PriceOut(APIModel):

@@ -374,6 +374,7 @@ def fetch_price(
         select(models.Trade).where(
             models.Trade.user_id == user.id,
             models.Trade.symbol == symbol.strip().upper(),
+            or_(models.Trade.asset_class == "equity", models.Trade.asset_class.is_(None)),
         )
     ).all()
     if not holdings and not trades:
@@ -432,7 +433,10 @@ def fetch_all_prices(
         select(models.Holding).where(models.Holding.user_id == user.id)
     ).all()
     trades = db.scalars(
-        select(models.Trade).where(models.Trade.user_id == user.id)
+        select(models.Trade).where(
+            models.Trade.user_id == user.id,
+            or_(models.Trade.asset_class == "equity", models.Trade.asset_class.is_(None)),
+        )
     ).all()
     watchlist_items = db.scalars(
         select(models.WatchlistItem)

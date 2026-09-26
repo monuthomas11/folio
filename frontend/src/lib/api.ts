@@ -11,8 +11,11 @@ import type {
   HoldingExit,
   Trade,
   TradebookData,
+  TradeAssetClass,
+  TradeChargesInput,
   TradeExitInput,
   TradeInput,
+  TradeMarkInput,
   ImportResult,
   InvestmentProfile,
   InvestmentProfileInput,
@@ -309,8 +312,8 @@ export const api = {
     await request(`/watchlist/fetch-price/${encodeURIComponent(symbol)}`, { method: "POST" });
   },
 
-  async getTradebook(): Promise<TradebookData> {
-    return request<TradebookData>("/tradebook");
+  async getTradebook(assetClass: TradeAssetClass = "equity"): Promise<TradebookData> {
+    return request<TradebookData>(`/tradebook?assetClass=${assetClass}`);
   },
 
   async addTrade(input: TradeInput): Promise<Trade> {
@@ -329,8 +332,20 @@ export const api = {
     return request<Trade>(`/tradebook/${id}/exits`, { method: "POST", body: input });
   },
 
-  async refreshTradebook(): Promise<TradebookData> {
-    return request<TradebookData>("/tradebook/fetch-all", { method: "POST" });
+  async refreshTradebook(assetClass: TradeAssetClass = "equity"): Promise<TradebookData> {
+    return request<TradebookData>(`/tradebook/fetch-all?assetClass=${assetClass}`, { method: "POST" });
+  },
+
+  async updateTradeMark(id: string, input: TradeMarkInput): Promise<Trade> {
+    return request<Trade>(`/tradebook/${id}/mark`, { method: "PUT", body: input });
+  },
+
+  async updateTradeCharges(id: string, input: TradeChargesInput): Promise<Trade> {
+    return request<Trade>(`/tradebook/${id}/charges`, { method: "PUT", body: input });
+  },
+
+  async updateExitCharges(id: string, exitId: string, input: TradeChargesInput): Promise<Trade> {
+    return request<Trade>(`/tradebook/${id}/exits/${exitId}/charges`, { method: "PUT", body: input });
   },
 };
 

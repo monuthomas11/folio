@@ -56,6 +56,9 @@ class User(Base):
     trade_exits: Mapped[list["TradeExit"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    trade_charges: Mapped[list["TradeCharge"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
     api_keys: Mapped[list["APIKey"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
@@ -117,6 +120,33 @@ class Trade(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     symbol: Mapped[str] = mapped_column(String(20), index=True)
     side: Mapped[str] = mapped_column(String(10))
+    asset_class: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, default="equity", index=True
+    )
+    instrument_type: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    exchange: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    underlying_type: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    underlying_symbol: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    contract_symbol: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    strike_price: Mapped[float | None] = mapped_column(Numeric(18, 6), nullable=True)
+    tick_size: Mapped[float | None] = mapped_column(Numeric(18, 6), nullable=True)
+    option_type: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    lot_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    entry_lots: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    product_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    entry_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    entry_order_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    entry_contract_note_ref: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+    strategy: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    thesis: Mapped[str | None] = mapped_column(Text, nullable=True)
+    settlement_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    margin_used: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    mark_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
     entry_date: Mapped[date] = mapped_column(Date)
     entry_quantity: Mapped[float] = mapped_column(Numeric(10, 3))
     entry_price: Mapped[float] = mapped_column(Numeric(12, 4))
@@ -134,6 +164,9 @@ class Trade(Base):
     exits: Mapped[list["TradeExit"]] = relationship(
         back_populates="trade", cascade="all, delete-orphan", order_by="TradeExit.exit_date.desc()"
     )
+    charges: Mapped[list["TradeCharge"]] = relationship(
+        back_populates="trade", cascade="all, delete-orphan"
+    )
 
 
 class TradeExit(Base):
@@ -145,14 +178,62 @@ class TradeExit(Base):
     )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(10, 3))
+    exit_lots: Mapped[int | None] = mapped_column(Integer, nullable=True)
     exit_price: Mapped[float] = mapped_column(Numeric(12, 4))
     exit_date: Mapped[date] = mapped_column(Date)
+    exit_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    exit_reason: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    exit_order_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    exit_contract_note_ref: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
     trade: Mapped[Trade] = relationship(back_populates="exits")
     user: Mapped[User] = relationship(back_populates="trade_exits")
+    charges: Mapped[list["TradeCharge"]] = relationship(
+        back_populates="trade_exit", cascade="all, delete-orphan"
+    )
+
+
+class TradeCharge(Base):
+    __tablename__ = "trade_charges"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    trade_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("trades.id", ondelete="CASCADE"), index=True
+    )
+    trade_exit_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("trade_exits.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    leg_type: Mapped[str] = mapped_column(String(10))
+    brokerage: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    stt_ctt: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    exchange_transaction: Mapped[float | None] = mapped_column(
+        Numeric(18, 2), nullable=True
+    )
+    sebi: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    gst: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    stamp_duty: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    ipft: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    other: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    contract_note_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="trade_charges")
+    trade: Mapped[Trade] = relationship(back_populates="charges")
+    trade_exit: Mapped[TradeExit | None] = relationship(back_populates="charges")
 
 
 class Alert(Base):

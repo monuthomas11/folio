@@ -30,6 +30,19 @@ def _migrate_sqlite() -> None:
                         f"ALTER TABLE {table.name} ADD COLUMN {column.name} {col_type}"
                     )
                 )
+        if "trades" in existing:
+            conn.execute(
+                text(
+                    "UPDATE trades SET asset_class = 'equity' "
+                    "WHERE asset_class IS NULL"
+                )
+            )
+            conn.execute(
+                text(
+                    "UPDATE trades SET instrument_type = 'equity' "
+                    "WHERE instrument_type IS NULL"
+                )
+            )
 
 
 def _migrate_postgres() -> None:
@@ -40,6 +53,61 @@ def _migrate_postgres() -> None:
             text(
                 "ALTER TABLE holdings ADD COLUMN IF NOT EXISTS "
                 "one_day_change_pct NUMERIC(8, 4)"
+            )
+        )
+        trade_columns = {
+            "asset_class": "VARCHAR(10)",
+            "instrument_type": "VARCHAR(12)",
+            "exchange": "VARCHAR(10)",
+            "underlying_type": "VARCHAR(10)",
+            "underlying_symbol": "VARCHAR(40)",
+            "contract_symbol": "VARCHAR(100)",
+            "expiry_date": "DATE",
+            "strike_price": "NUMERIC(18, 6)",
+            "tick_size": "NUMERIC(18, 6)",
+            "option_type": "VARCHAR(2)",
+            "lot_size": "INTEGER",
+            "entry_lots": "INTEGER",
+            "product_type": "VARCHAR(20)",
+            "entry_at": "TIMESTAMP WITH TIME ZONE",
+            "entry_order_id": "VARCHAR(100)",
+            "entry_contract_note_ref": "VARCHAR(100)",
+            "strategy": "VARCHAR(100)",
+            "thesis": "TEXT",
+            "settlement_type": "VARCHAR(20)",
+            "margin_used": "NUMERIC(18, 2)",
+            "mark_source": "VARCHAR(20)",
+        }
+        exit_columns = {
+            "exit_lots": "INTEGER",
+            "exit_at": "TIMESTAMP WITH TIME ZONE",
+            "exit_reason": "VARCHAR(30)",
+            "exit_order_id": "VARCHAR(100)",
+            "exit_contract_note_ref": "VARCHAR(100)",
+            "notes": "TEXT",
+        }
+        for column, column_type in trade_columns.items():
+            conn.execute(
+                text(
+                    f"ALTER TABLE trades ADD COLUMN IF NOT EXISTS {column} {column_type}"
+                )
+            )
+        for column, column_type in exit_columns.items():
+            conn.execute(
+                text(
+                    f"ALTER TABLE trade_exits ADD COLUMN IF NOT EXISTS {column} {column_type}"
+                )
+            )
+        conn.execute(
+            text(
+                "UPDATE trades SET asset_class = 'equity' "
+                "WHERE asset_class IS NULL"
+            )
+        )
+        conn.execute(
+            text(
+                "UPDATE trades SET instrument_type = 'equity' "
+                "WHERE instrument_type IS NULL"
             )
         )
 

@@ -1,9 +1,9 @@
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from yfinance_service import fetch_price_data
@@ -11,21 +11,35 @@ from yfinance_service import fetch_price_data
 from .. import models, schemas
 from ..database import get_db
 from ..security import get_current_user
+from ..services.fno_quotes import fetch_fno_prices
+from ..services.tradebook_calculations import (
+    calculate_summary,
+    calculate_trade,
+    entry_units,
+    remaining_units,
+)
 
 router = APIRouter(prefix="/tradebook", tags=["tradebook"])
 
 
-def _coerce_uuid(value: str) -> uuid.UUID:
+def _coerce_uuid(value: str, detail: str = "Trade not found") -> uuid.UUID:
     try:
         return uuid.UUID(value)
     except (ValueError, AttributeError):
-        raise HTTPException(status_code=404, detail="Trade not found")
+        raise HTTPException(status_code=404, detail=detail)
+
+
+def _trade_options():
+    return (
+        selectinload(models.Trade.exits).selectinload(models.TradeExit.charges),
+        selectinload(models.Trade.charges),
+    )
 
 
 def _get_owned_trade(db: Session, user: models.User, trade_id: str) -> models.Trade:
     trade = db.scalar(
         select(models.Trade)
-        .options(selectinload(models.Trade.exits))
+        .options(*_trade_options())
         .where(
             models.Trade.id == _coerce_uuid(trade_id),
             models.Trade.user_id == user.id,
@@ -36,108 +50,145 @@ def _get_owned_trade(db: Session, user: models.User, trade_id: str) -> models.Tr
     return trade
 
 
-def _dec(value: float | Decimal | None) -> Decimal:
-    return Decimal(str(value or 0))
-
-
-def _trade_values(trade: models.Trade) -> tuple[Decimal, Decimal, Decimal | None, Decimal | None]:
-    entry_quantity = _dec(trade.entry_quantity)
-    entry_price = _dec(trade.entry_price)
-    exited_quantity = sum((_dec(item.quantity) for item in trade.exits), Decimal("0"))
-    remaining = max(Decimal("0"), entry_quantity - exited_quantity)
-    realized = Decimal("0")
-    for item in trade.exits:
-        quantity = _dec(item.quantity)
-        exit_price = _dec(item.exit_price)
-        if trade.side == "long":
-            realized += (exit_price - entry_price) * quantity
-        else:
-            realized += (entry_price - exit_price) * quantity
-
-    unrealized: Decimal | None = None
-    if remaining > 0 and trade.current_ltp is not None:
-        ltp = _dec(trade.current_ltp)
-        unrealized = (ltp - entry_price) * remaining if trade.side == "long" else (entry_price - ltp) * remaining
-    total = realized + unrealized if unrealized is not None else None
-    return remaining, realized, unrealized, total
-
-
-def _trade_out(trade: models.Trade) -> dict:
-    remaining, realized, unrealized, total = _trade_values(trade)
-    entry_price = _dec(trade.entry_price)
-    exits = []
-    for item in trade.exits:
-        exit_price = _dec(item.exit_price)
-        quantity = _dec(item.quantity)
-        pnl = (exit_price - entry_price) * quantity if trade.side == "long" else (entry_price - exit_price) * quantity
-        exits.append(
-            {
-                "id": item.id,
-                "quantity": float(quantity),
-                "exit_price": float(exit_price),
-                "exit_date": item.exit_date,
-                "realized_pnl": round(float(pnl), 2),
-            }
+def _asset_filter(asset_class: str):
+    if asset_class == "equity":
+        return or_(
+            models.Trade.asset_class == "equity",
+            models.Trade.asset_class.is_(None),
         )
-    return {
-        "id": trade.id,
-        "symbol": trade.symbol,
-        "side": trade.side,
-        "entry_date": trade.entry_date,
-        "entry_quantity": float(_dec(trade.entry_quantity)),
-        "entry_price": float(entry_price),
-        "broker": trade.broker,
-        "notes": trade.notes,
-        "current_ltp": float(trade.current_ltp) if trade.current_ltp is not None else None,
-        "last_updated": trade.last_updated,
-        "remaining_quantity": float(remaining),
-        "status": "closed" if remaining == 0 else "open",
-        "realized_pnl": round(float(realized), 2),
-        "unrealized_pnl": round(float(unrealized), 2) if unrealized is not None else None,
-        "total_pnl": round(float(total), 2) if total is not None else None,
-        "exits": exits,
-    }
+    return models.Trade.asset_class == asset_class
 
 
-def _list_owned_trades(db: Session, user: models.User) -> list[models.Trade]:
-    return list(
-        db.scalars(
-            select(models.Trade)
-            .options(selectinload(models.Trade.exits))
-            .where(models.Trade.user_id == user.id)
-            .order_by(models.Trade.entry_date.desc(), models.Trade.created_at.desc())
-        ).all()
+def _list_owned_trades(
+    db: Session, user: models.User, asset_class: str | None = None
+) -> list[models.Trade]:
+    query = (
+        select(models.Trade)
+        .options(*_trade_options())
+        .where(models.Trade.user_id == user.id)
     )
+    if asset_class:
+        query = query.where(_asset_filter(asset_class))
+    query = query.order_by(models.Trade.entry_date.desc(), models.Trade.created_at.desc())
+    return list(db.scalars(query).all())
 
 
-def _tradebook_response(trades: list[models.Trade]) -> dict:
-    rows = [_trade_out(trade) for trade in trades]
-    realized = sum((Decimal(str(row["realized_pnl"])) for row in rows), Decimal("0"))
-    open_rows = [row for row in rows if row["status"] == "open"]
-    priced_rows = [row for row in open_rows if row["unrealized_pnl"] is not None]
-    unpriced_count = len(open_rows) - len(priced_rows)
-    unrealized = sum((Decimal(str(row["unrealized_pnl"])) for row in priced_rows), Decimal("0")) if priced_rows else None
-    total = realized + unrealized if unpriced_count == 0 and unrealized is not None else (realized if not open_rows else None)
+def _upsert_charge(
+    db: Session,
+    user: models.User,
+    trade: models.Trade,
+    payload: schemas.TradeChargesIn | None,
+    leg_type: str,
+    trade_exit: models.TradeExit | None = None,
+) -> None:
+    if payload is None:
+        return
+    charge = None
+    for candidate in trade.charges:
+        if candidate.leg_type != leg_type:
+            continue
+        if leg_type == "entry" and candidate.trade_exit_id is None:
+            charge = candidate
+            break
+        if leg_type == "exit" and trade_exit is not None and candidate.trade_exit_id == trade_exit.id:
+            charge = candidate
+            break
+    values = payload.model_dump()
+    if charge is None:
+        charge = models.TradeCharge(
+            user_id=user.id,
+            trade_id=trade.id,
+            trade_exit_id=trade_exit.id if trade_exit else None,
+            leg_type=leg_type,
+            **values,
+        )
+        db.add(charge)
+        trade.charges.append(charge)
+    else:
+        for key, value in values.items():
+            setattr(charge, key, value)
+
+
+def _apply_trade_payload(trade: models.Trade, payload: schemas.TradeIn) -> None:
+    trade.symbol = payload.symbol.strip().upper()
+    trade.side = payload.side
+    trade.asset_class = payload.asset_class
+    trade.instrument_type = payload.instrument_type
+    trade.exchange = payload.exchange
+    trade.underlying_type = payload.underlying_type
+    trade.underlying_symbol = (
+        payload.underlying_symbol.strip().upper()
+        if payload.underlying_symbol
+        else None
+    )
+    trade.contract_symbol = payload.contract_symbol.strip().upper() if payload.contract_symbol else None
+    trade.expiry_date = payload.expiry_date
+    trade.strike_price = payload.strike_price
+    trade.tick_size = payload.tick_size
+    trade.option_type = payload.option_type
+    trade.lot_size = payload.lot_size
+    trade.entry_lots = payload.entry_lots
+    trade.product_type = payload.product_type
+    trade.entry_at = payload.entry_at
+    trade.entry_order_id = payload.entry_order_id
+    trade.entry_contract_note_ref = payload.entry_contract_note_ref
+    trade.strategy = payload.strategy
+    trade.thesis = payload.thesis
+    trade.settlement_type = payload.settlement_type
+    trade.margin_used = payload.margin_used
+    trade.entry_date = payload.entry_date
+    trade.entry_quantity = (
+        float(payload.entry_lots * payload.lot_size)
+        if payload.asset_class == "fno"
+        else payload.entry_quantity
+    )
+    trade.entry_price = payload.entry_price
+    trade.broker = payload.broker
+    trade.notes = payload.notes
+
+
+def _validate_exit(trade: models.Trade, payload: schemas.TradeExitIn) -> Decimal:
+    if payload.exit_date < trade.entry_date:
+        raise HTTPException(status_code=422, detail="Exit date cannot be before entry date")
+    if (trade.asset_class or "equity") == "fno":
+        if payload.exit_lots is None:
+            raise HTTPException(status_code=422, detail="F&O exits require whole lots")
+        if payload.quantity is not None:
+            expected_quantity = Decimal(payload.exit_lots * (trade.lot_size or 0))
+            if Decimal(str(payload.quantity)) != expected_quantity:
+                raise HTTPException(status_code=422, detail="Exit quantity must equal lots multiplied by lot size")
+        quantity = Decimal(payload.exit_lots * (trade.lot_size or 0))
+    else:
+        if payload.quantity is None:
+            raise HTTPException(status_code=422, detail="Equity exits require quantity")
+        quantity = Decimal(str(payload.quantity))
+    remaining = remaining_units(trade)
+    if quantity > remaining:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Exit quantity cannot exceed {float(remaining):g}",
+        )
+    return quantity
+
+
+def _tradebook_response(
+    trades: list[models.Trade], quote_errors: list[dict] | None = None
+) -> dict:
+    calculations = [calculate_trade(trade) for trade in trades]
     return {
-        "summary": {
-            "trade_count": len(rows),
-            "open_count": len(open_rows),
-            "closed_count": len(rows) - len(open_rows),
-            "realized_pnl": round(float(realized), 2),
-            "unrealized_pnl": round(float(unrealized), 2) if unrealized is not None else None,
-            "total_pnl": round(float(total), 2) if total is not None else None,
-            "unpriced_open_count": unpriced_count,
-        },
-        "trades": rows,
+        "summary": calculate_summary(calculations),
+        "trades": [calculation.row for calculation in calculations],
+        "quote_errors": quote_errors or [],
     }
 
 
 @router.get("", response_model=schemas.TradebookOut)
 def get_tradebook(
+    asset_class: schemas.AssetClass = Query("equity", alias="assetClass"),
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return _tradebook_response(_list_owned_trades(db, user))
+    return _tradebook_response(_list_owned_trades(db, user, asset_class))
 
 
 @router.post("", response_model=schemas.TradeOut, status_code=status.HTTP_201_CREATED)
@@ -146,21 +197,18 @@ def create_trade(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    trade = models.Trade(
-        user_id=user.id,
-        symbol=payload.symbol.strip().upper(),
-        side=payload.side,
-        entry_date=payload.entry_date,
-        entry_quantity=payload.entry_quantity,
-        entry_price=payload.entry_price,
-        broker=payload.broker,
-        notes=payload.notes,
-    )
+    trade = models.Trade(user_id=user.id)
+    _apply_trade_payload(trade, payload)
     db.add(trade)
+    db.flush()
+    _upsert_charge(db, user, trade, payload.entry_charges, "entry")
     db.commit()
-    db.refresh(trade)
-    trade.exits = []
-    return _trade_out(trade)
+    return _trade_out_after_commit(db, user, trade.id)
+
+
+def _trade_out_after_commit(db: Session, user: models.User, trade_id: uuid.UUID) -> dict:
+    trade = _get_owned_trade(db, user, str(trade_id))
+    return calculate_trade(trade).row
 
 
 @router.put("/{trade_id}", response_model=schemas.TradeOut)
@@ -172,17 +220,14 @@ def update_trade(
 ):
     trade = _get_owned_trade(db, user, trade_id)
     if trade.exits:
-        raise HTTPException(status_code=409, detail="Trades cannot be edited after an exit is recorded")
-    trade.symbol = payload.symbol.strip().upper()
-    trade.side = payload.side
-    trade.entry_date = payload.entry_date
-    trade.entry_quantity = payload.entry_quantity
-    trade.entry_price = payload.entry_price
-    trade.broker = payload.broker
-    trade.notes = payload.notes
+        raise HTTPException(
+            status_code=409,
+            detail="Trades cannot be edited after an exit is recorded",
+        )
+    _apply_trade_payload(trade, payload)
+    _upsert_charge(db, user, trade, payload.entry_charges, "entry")
     db.commit()
-    db.refresh(trade)
-    return _trade_out(trade)
+    return _trade_out_after_commit(db, user, trade.id)
 
 
 @router.delete("/{trade_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -193,7 +238,10 @@ def delete_trade(
 ):
     trade = _get_owned_trade(db, user, trade_id)
     if trade.exits:
-        raise HTTPException(status_code=409, detail="Trades cannot be deleted after an exit is recorded")
+        raise HTTPException(
+            status_code=409,
+            detail="Trades cannot be deleted after an exit is recorded",
+        )
     db.delete(trade)
     db.commit()
 
@@ -206,53 +254,139 @@ def add_trade_exit(
     db: Session = Depends(get_db),
 ):
     trade = _get_owned_trade(db, user, trade_id)
-    remaining, _, _, _ = _trade_values(trade)
-    if payload.quantity > remaining:
-        raise HTTPException(status_code=422, detail=f"Exit quantity cannot exceed {float(remaining):g}")
-    if payload.exit_date < trade.entry_date:
-        raise HTTPException(status_code=422, detail="Exit date cannot be before entry date")
+    quantity = _validate_exit(trade, payload)
+    exit_record = models.TradeExit(
+        trade_id=trade.id,
+        user_id=user.id,
+        quantity=float(quantity),
+        exit_lots=payload.exit_lots,
+        exit_price=payload.exit_price,
+        exit_date=payload.exit_date,
+        exit_at=payload.exit_at,
+        exit_reason=payload.exit_reason,
+        exit_order_id=payload.exit_order_id,
+        exit_contract_note_ref=payload.exit_contract_note_ref,
+        notes=payload.notes,
+    )
+    db.add(exit_record)
+    db.flush()
+    _upsert_charge(db, user, trade, payload.charges, "exit", exit_record)
     if "notes" in payload.model_fields_set:
         trade.notes = payload.notes
-    db.add(
-        models.TradeExit(
-            trade_id=trade.id,
-            user_id=user.id,
-            quantity=payload.quantity,
-            exit_price=payload.exit_price,
-            exit_date=payload.exit_date,
-        )
-    )
     db.commit()
+    return _trade_out_after_commit(db, user, trade.id)
+
+
+@router.put("/{trade_id}/mark", response_model=schemas.TradeOut)
+def update_trade_mark(
+    trade_id: str,
+    payload: schemas.TradeMarkIn,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     trade = _get_owned_trade(db, user, trade_id)
-    return _trade_out(trade)
+    if remaining_units(trade) <= 0:
+        raise HTTPException(status_code=409, detail="Closed trades cannot receive a new mark")
+    trade.current_ltp = payload.ltp
+    trade.mark_source = payload.source
+    trade.last_updated = datetime.now(timezone.utc)
+    db.commit()
+    return _trade_out_after_commit(db, user, trade.id)
+
+
+@router.put("/{trade_id}/charges", response_model=schemas.TradeOut)
+def update_entry_charges(
+    trade_id: str,
+    payload: schemas.TradeChargesIn,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    trade = _get_owned_trade(db, user, trade_id)
+    _upsert_charge(db, user, trade, payload, "entry")
+    db.commit()
+    return _trade_out_after_commit(db, user, trade.id)
+
+
+@router.put("/{trade_id}/exits/{exit_id}/charges", response_model=schemas.TradeOut)
+def update_exit_charges(
+    trade_id: str,
+    exit_id: str,
+    payload: schemas.TradeChargesIn,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    trade = _get_owned_trade(db, user, trade_id)
+    exit_uuid = _coerce_uuid(exit_id, "Exit not found")
+    exit_record = next((item for item in trade.exits if item.id == exit_uuid), None)
+    if exit_record is None:
+        raise HTTPException(status_code=404, detail="Exit not found")
+    _upsert_charge(db, user, trade, payload, "exit", exit_record)
+    db.commit()
+    return _trade_out_after_commit(db, user, trade.id)
 
 
 def update_trade_prices(
     db: Session, user_id: uuid.UUID, prices: dict[str, float], now: datetime
 ) -> None:
     trades = db.scalars(
-        select(models.Trade).where(models.Trade.user_id == user_id)
+        select(models.Trade).where(
+            models.Trade.user_id == user_id,
+            or_(models.Trade.asset_class == "equity", models.Trade.asset_class.is_(None)),
+        )
     ).all()
     for trade in trades:
-        remaining, _, _, _ = _trade_values(trade)
+        if remaining_units(trade) <= 0:
+            continue
         price = prices.get(trade.symbol)
-        if remaining > 0 and price is not None:
+        if price is not None:
             trade.current_ltp = price
+            trade.mark_source = "exchange"
             trade.last_updated = now
 
 
 @router.post("/fetch-all", response_model=schemas.TradebookOut)
 def fetch_tradebook_prices(
+    asset_class: schemas.AssetClass = Query("equity", alias="assetClass"),
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    trades = _list_owned_trades(db, user)
-    symbols = {trade.symbol for trade in trades if _trade_values(trade)[0] > 0}
-    if not symbols:
-        return _tradebook_response(trades)
-    prices, _, errors = fetch_price_data(symbols)
-    if not prices and errors:
-        raise HTTPException(status_code=502, detail=f"Could not fetch prices: {next(iter(errors.values()))}")
-    update_trade_prices(db, user.id, prices, datetime.now(timezone.utc))
+    trades = _list_owned_trades(db, user, asset_class)
+    open_trades = [trade for trade in trades if remaining_units(trade) > 0]
+    now = datetime.now(timezone.utc)
+    quote_errors: list[dict] = []
+    if asset_class == "fno":
+        prices, errors = fetch_fno_prices(open_trades)
+        for trade in open_trades:
+            price = prices.get(trade.id)
+            if price is not None:
+                trade.current_ltp = price
+                trade.mark_source = "exchange"
+                trade.last_updated = now
+            elif trade.id in errors:
+                quote_errors.append(
+                    {
+                        "trade_id": trade.id,
+                        "symbol": trade.symbol,
+                        "message": errors[trade.id],
+                    }
+                )
+    else:
+        symbols = {trade.symbol for trade in open_trades}
+        if symbols:
+            prices, _, errors = fetch_price_data(symbols)
+            for trade in open_trades:
+                price = prices.get(trade.symbol)
+                if price is not None:
+                    trade.current_ltp = price
+                    trade.mark_source = "exchange"
+                    trade.last_updated = now
+                elif trade.symbol in errors:
+                    quote_errors.append(
+                        {
+                            "trade_id": trade.id,
+                            "symbol": trade.symbol,
+                            "message": errors[trade.symbol],
+                        }
+                    )
     db.commit()
-    return _tradebook_response(_list_owned_trades(db, user))
+    return _tradebook_response(_list_owned_trades(db, user, asset_class), quote_errors)
