@@ -497,8 +497,9 @@ function TradeRow({ trade, onEdit, onDelete, onExit, onMark, onCharges }: { trad
   const isFno = trade.assetClass === "fno";
   const displayPnl = isFno ? trade.netTotalPnl : trade.totalPnl;
   const expiryNotice = isFno && trade.status === "open" ? expiryWarning(trade.expiryDate) : null;
+  const exits = trade.exits ?? [];
   const incompleteExit = trade.entryCharge?.complete
-    ? trade.exits.find((exit) => !exit.charges?.complete)
+    ? exits.find((exit) => !exit.charges?.complete)
     : undefined;
   const chargesAction = trade.chargesComplete
     ? "Charges"
@@ -512,7 +513,7 @@ function TradeRow({ trade, onEdit, onDelete, onExit, onMark, onCharges }: { trad
           <div className={styles.symbolLine}><strong>{isFno ? trade.underlyingSymbol ?? trade.symbol : trade.symbol}</strong><span className={`${styles.side} ${isLong ? styles.long : styles.short}`}>{isLong ? <IconArrowUp width={12} height={12} /> : <IconArrowDown width={12} height={12} />}{isLong ? "Long" : "Short"}</span><span className={`${styles.status} ${trade.status === "closed" ? styles.closed : styles.open}`}>{trade.status}</span>{isFno && <span className={styles.contractPill}>{trade.instrumentType === "option" ? `${trade.optionType} ${formatPrice(trade.strikePrice ?? 0)}` : "Future"}</span>}</div>
           <span className={styles.meta}>{isFno ? `${trade.exchange} · ${trade.contractSymbol} · ${trade.entryLots} lots × ${trade.lotSize} · expiry ${trade.expiryDate ? formatDate(trade.expiryDate) : "—"}` : `${formatDate(trade.entryDate)} · ${formatQuantity(trade.entryQuantity)} shares at ${formatPrice(trade.entryPrice)}${trade.broker ? ` · ${trade.broker}` : ""}`}</span>
         </div>
-        <div className={styles.actions}><Button variant="ghost" size="sm" onClick={() => onExit(trade)} disabled={trade.status === "closed"}>Exit</Button>{isFno && trade.status === "open" && <Button variant="ghost" size="sm" onClick={() => onMark(trade)}>Mark</Button>}{trade.exits.length === 0 && <><Button variant="ghost" size="sm" onClick={() => onEdit(trade)}><IconPencil width={14} height={14} />Edit</Button><Button variant="ghost" size="sm" className={styles.delete} onClick={() => onDelete(trade)}><IconTrash width={14} height={14} />Remove</Button></>}{isFno && <Button variant="ghost" size="sm" onClick={() => onCharges(trade, incompleteExit)}>{chargesAction}</Button>}</div>
+        <div className={styles.actions}><Button variant="ghost" size="sm" onClick={() => onExit(trade)} disabled={trade.status === "closed"}>Exit</Button>{isFno && trade.status === "open" && <Button variant="ghost" size="sm" onClick={() => onMark(trade)}>Mark</Button>}{exits.length === 0 && <><Button variant="ghost" size="sm" onClick={() => onEdit(trade)}><IconPencil width={14} height={14} />Edit</Button><Button variant="ghost" size="sm" className={styles.delete} onClick={() => onDelete(trade)}><IconTrash width={14} height={14} />Remove</Button></>}{isFno && <Button variant="ghost" size="sm" onClick={() => onCharges(trade, incompleteExit)}>{chargesAction}</Button>}</div>
       </div>
       <div className={styles.metrics}>
         <div><span>{isFno ? "Open lots" : "Remaining"}</span><strong className="num">{trade.status === "closed" ? "Closed" : isFno ? `${trade.remainingLots} lots` : formatQuantity(trade.remainingQuantity)}</strong></div>
@@ -524,7 +525,7 @@ function TradeRow({ trade, onEdit, onDelete, onExit, onMark, onCharges }: { trad
       {isFno && !trade.chargesComplete && <p className={styles.warningNote}>Net P/L is provisional until every entry and exit charge is recorded.</p>}
       {expiryNotice && <p className={styles.warningNote}>{expiryNotice} This contract will not be settled automatically.</p>}
       {trade.notes && <p className={styles.notes}>{trade.notes}</p>}
-      {trade.exits.length > 0 && <details className={styles.exitHistory}><summary>{trade.exits.length} exit {trade.exits.length === 1 ? "lot" : "lots"}</summary><div className={styles.exitList}>{trade.exits.map((exit) => <div className={styles.exitRow} key={exit.id}><span>{formatDate(exit.exitDate)} · {isFno ? `${exit.exitLots} lots at ${formatPrice(exit.exitPrice)}` : `${formatQuantity(exit.quantity)} shares at ${formatPrice(exit.exitPrice)}`}</span><span className={styles.exitActions}><PnlValue value={isFno ? exit.netRealizedPnl : exit.realizedPnl} />{isFno && <Button variant="ghost" size="sm" onClick={() => onCharges(trade, exit)}>{exit.charges?.complete ? "Charges" : "Add charges"}</Button>}</span></div>)}</div></details>}
+      {exits.length > 0 && <details className={styles.exitHistory}><summary>{exits.length} exit {exits.length === 1 ? "lot" : "lots"}</summary><div className={styles.exitList}>{exits.map((exit) => <div className={styles.exitRow} key={exit.id}><span>{formatDate(exit.exitDate)} · {isFno ? `${exit.exitLots} lots at ${formatPrice(exit.exitPrice)}` : `${formatQuantity(exit.quantity)} shares at ${formatPrice(exit.exitPrice)}`}</span><span className={styles.exitActions}><PnlValue value={isFno ? exit.netRealizedPnl : exit.realizedPnl} />{isFno && <Button variant="ghost" size="sm" onClick={() => onCharges(trade, exit)}>{exit.charges?.complete ? "Charges" : "Add charges"}</Button>}</span></div>)}</div></details>}
     </article>
   );
 }
