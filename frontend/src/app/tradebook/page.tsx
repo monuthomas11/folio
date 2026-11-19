@@ -370,7 +370,7 @@ function ExitDialog({ trade, onClose, onSubmit }: { trade: Trade; onClose: () =>
   const [saving, setSaving] = useState(false);
   const numericPrice = Number(price);
   const numericUnits = isFno ? Number(lots) * (trade.lotSize ?? 0) : Number(quantity);
-  const estimated = numericUnits > 0 && numericPrice > 0 ? (numericPrice - trade.entryPrice) * numericUnits : null;
+  const estimated = numericUnits > 0 && numericPrice > 0 ? (trade.side === "short" ? trade.entryPrice - numericPrice : numericPrice - trade.entryPrice) * numericUnits : null;
   const chargesComplete = Object.entries(charges).filter(([key]) => key !== "contractNoteRef").every(([, value]) => value != null);
   const entryAllocation = trade.entryCharge?.complete && trade.entryQuantity > 0 && estimated != null
     ? (trade.entryCharge.total ?? 0) * numericUnits / trade.entryQuantity

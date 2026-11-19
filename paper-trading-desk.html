@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Paper Trading Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1420;
+    --surface:#161D2C;
+    --surface-2:#1C2437;
+    --border:#2A3347;
+    --text:#E7ECF5;
+    --text-muted:#8892A6;
+    --text-faint:#5B6478;
+    --gain:#2FBF87;
+    --loss:#E5484D;
+    --long:#4F9CFF;
+    --short:#E8A33D;
+    --font-ui:'Inter',-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-ui);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 60px;}
+
+  /* ticker strip */
+  .ticker{
+    background:var(--surface-2);
+    border-bottom:1px solid var(--border);
+    overflow:hidden;
+    white-space:nowrap;
+    padding:7px 0;
+  }
+  .ticker__inner{
+    display:inline-block;
+    padding-left:100%;
+    animation:scroll 26s linear infinite;
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.04em;
+    color:var(--text-faint);
+  }
+  @keyframes scroll{
+    0%{transform:translateX(0);}
+    100%{transform:translateX(-100%);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ticker__inner{animation:none;padding-left:12px;}
+  }
+
+  /* header */
+  header{padding:28px 0 20px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+  .title-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em;}
+  h1 span{color:var(--text-muted);font-weight:500;}
+  .reset-link{
+    background:none;border:none;color:var(--text-faint);font-family:var(--font-ui);
+    font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+    padding:0;
+  }
+  .reset-link:hover{color:var(--loss);}
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-top:18px;
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .stat{background:var(--surface);padding:13px 16px;}
+  .stat label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:6px;}
+  .stat .val{font-family:var(--font-mono);font-size:19px;font-weight:600;}
+  .val.gain{color:var(--gain);}
+  .val.loss{color:var(--loss);}
+
+  @media (max-width:760px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+  }
+
+  /* main grid */
+  main{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;}
+  @media (max-width:860px){ main{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+  }
+  .panel__head{
+    padding:13px 16px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .panel__head h2{font-size:13px;margin:0;font-weight:600;color:var(--text);}
+  .panel__head .count{font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);}
+  .panel__body{padding:16px;}
+
+  /* form */
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:5px;}
+  .field input, .field select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:var(--font-mono);
+    font-size:13.5px;
+    padding:8px 10px;
+    border-radius:4px;
+    outline:none;
+  }
+  .field input:focus, .field select:focus{border-color:var(--long);}
+  .side-toggle{display:flex;gap:8px;}
+  .side-btn{
+    flex:1;padding:8px 0;text-align:center;border-radius:4px;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--text-muted);cursor:pointer;font-size:12.5px;
+    font-family:var(--font-mono);font-weight:600;letter-spacing:.03em;
+  }
+  .side-btn.active.long{background:rgba(79,156,255,.14);border-color:var(--long);color:var(--long);}
+  .side-btn.active.short{background:rgba(232,163,61,.14);border-color:var(--short);color:var(--short);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .hint{font-size:11.5px;color:var(--text-faint);margin-top:5px;font-family:var(--font-mono);}
+  .hint.warn{color:var(--short);}
+  .cost-toggle{display:flex;align-items:center;gap:8px;margin:14px 0 4px;font-size:12px;color:var(--text-muted);}
+  .cost-toggle input{width:auto;}
+  .submit-btn{
+    width:100%;padding:10px;margin-top:6px;background:var(--gain);border:none;color:#08150F;
+    font-family:var(--font-ui);font-weight:600;font-size:13.5px;border-radius:4px;cursor:pointer;
+  }
+  .submit-btn:hover{filter:brightness(1.08);}
+  .submit-btn:disabled{background:var(--surface-2);color:var(--text-faint);cursor:not-allowed;}
+  .error-msg{color:var(--loss);font-size:12px;margin-top:8px;font-family:var(--font-mono);}
+
+  /* tables */
+  .table-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12.5px;}
+  th{
+    text-align:right;padding:9px 12px;color:var(--text-muted);font-weight:500;font-size:11px;
+    border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  th:first-child, td:first-child{text-align:left;}
+  td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  .sym{font-weight:600;color:var(--text);}
+  .badge{
+    display:inline-block;padding:2px 7px;border-radius:3px;font-size:10.5px;font-weight:700;
+    letter-spacing:.03em;
+  }
+  .badge.long{background:rgba(79,156,255,.14);color:var(--long);}
+  .badge.short{background:rgba(232,163,61,.14);color:var(--short);}
+  .pnl-pos{color:var(--gain);}
+  .pnl-neg{color:var(--loss);}
+  .last-input{
+    width:82px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    font-family:var(--font-mono);font-size:12.5px;padding:5px 7px;border-radius:3px;text-align:right;
+  }
+  .close-btn{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text-muted);
+    font-family:var(--font-ui);font-size:11.5px;padding:5px 10px;border-radius:4px;cursor:pointer;
+  }
+  .close-btn:hover{border-color:var(--loss);color:var(--loss);}
+  .confirm-row{background:var(--surface-2);}
+  .confirm-row td{padding:12px;}
+  .confirm-inline{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
+  .confirm-inline input{width:90px;}
+  .btn-sm{
+    font-family:var(--font-ui);font-size:11.5px;padding:6px 11px;border-radius:4px;border:none;cursor:pointer;
+  }
+  .btn-confirm{background:var(--gain);color:#08150F;font-weight:600;}
+  .btn-cancel{background:transparent;color:var(--text-faint);}
+
+  .empty{padding:28px 16px;text-align:center;color:var(--text-faint);font-size:12.5px;}
+
+  .history-panel{margin-top:20px;}
+
+  footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--border);color:var(--text-faint);font-size:11.5px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div class="ticker"><div class="ticker__inner" id="tickerText">PAPER TRADING — NO REAL MONEY AT RISK &nbsp;&nbsp;·&nbsp;&nbsp; RISK MAX 1% OF CAPITAL PER TRADE &nbsp;&nbsp;·&nbsp;&nbsp; NIFTY · BANK NIFTY · FNO · CASH SEGMENT &nbsp;&nbsp;·&nbsp;&nbsp; JOURNAL EVERY TRADE &nbsp;&nbsp;·&nbsp;&nbsp; </div></div>
+
+<div class="wrap">
+  <header>
+    <div class="title-row">
+      <h1>Paper Trading Desk <span>— practice ledger</span></h1>
+      <button class="reset-link" id="resetBtn">Reset account</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><label>Equity</label><div class="val" id="statEquity">₹0</div></div>
+      <div class="stat"><label>Available</label><div class="val" id="statAvailable">₹0</div></div>
+      <div class="stat"><label>Today's P&amp;L</label><div class="val" id="statToday">₹0</div></div>
+      <div class="stat"><label>Total P&amp;L</label><div class="val" id="statTotal">₹0</div></div>
+      <div class="stat"><label>Win rate</label><div class="val" id="statWinRate">—</div></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel">
+      <div class="panel__head"><h2>New trade ticket</h2></div>
+      <div class="panel__body">
+        <div class="field">
+          <label for="symbol">Symbol</label>
+          <input type="text" id="symbol" placeholder="e.g. RELIANCE" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Side</label>
+          <div class="side-toggle">
+            <button type="button" class="side-btn long active" id="btnLong">LONG</button>
+            <button type="button" class="side-btn short" id="btnShort">SHORT</button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="qty">Quantity</label>
+            <input type="number" id="qty" min="1" step="1" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="entryPrice">Entry price</label>
+            <input type="number" id="entryPrice" min="0" step="0.05" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="stopLoss">Stop loss</label>
+            <input type="number" id="stopLoss" min="0" step="0.05" placeholder="0.00" />
+          </div>
+          <div class="field">
+            <label for="target">Target</label>
+            <input type="number" id="target" min="0" step="0.05" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="hint" id="riskHint">Set entry &amp; stop loss to see suggested quantity (1% risk rule).</div>
+
+        <label class="cost-toggle"><input type="checkbox" id="costToggle" checked /> Simulate real costs (₹20/trade — brokerage, STT, taxes)</label>
+
+        <button class="submit-btn" id="placeBtn">Place paper trade</button>
+        <div class="error-msg" id="formError"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">
+        <h2>Open positions</h2>
+        <span class="count" id="openCount">0</span>
+      </div>
+      <div class="table-scroll" id="openPositionsWrap"></div>
+    </div>
+  </main>
+
+  <div class="panel history-panel">
+    <div class="panel__head">
+      <h2>Trade history</h2>
+      <span class="count" id="historyCount">0</span>
+    </div>
+    <div class="table-scroll" id="historyWrap"></div>
+  </div>
+
+  <footer>
+    This is a paper trading simulator — no real money is used and nothing here is investment advice.
+    Simulated results don't account for slippage, liquidity, or order execution delays, so real trading
+    will behave differently even if your paper P&amp;L looks good.
+  </footer>
+</div>
+
+<script>
+(function(){
+  const DEFAULT_CAPITAL = 10000;
+  let account = { equity: DEFAULT_CAPITAL, startingCapital: DEFAULT_CAPITAL };
+  let openPositions = [];
+  let history = [];
+  let side = 'LONG';
+  let closingId = null;
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => (n < 0 ? '-₹' : '₹') + Math.abs(n).toLocaleString('en-IN', {maximumFractionDigits:2, minimumFractionDigits:2});
+  const todayStr = () => new Date().toDateString();
+
+  async function loadState(){
+    try{
+      const acc = await window.storage.get('account', false);
+      if(acc && acc.value) account = JSON.parse(acc.value);
+    }catch(e){ /* no saved account yet */ }
+    try{
+      const op = await window.storage.get('open-positions', false);
+      if(op && op.value) openPositions = JSON.parse(op.value);
+    }catch(e){ /* none yet */ }
+    try{
+      const h = await window.storage.get('trade-history', false);
+      if(h && h.value) history = JSON.parse(h.value);
+    }catch(e){ /* none yet */ }
+    render();
+  }
+
+  async function saveAccount(){
+    try{ await window.storage.set('account', JSON.stringify(account), false); }catch(e){ console.error('save account failed', e); }
+  }
+  async function saveOpen(){
+    try{ await window.storage.set('open-positions', JSON.stringify(openPositions), false); }catch(e){ console.error('save open failed', e); }
+  }
+  async function saveHistory(){
+    try{ await window.storage.set('trade-history', JSON.stringify(history), false); }catch(e){ console.error('save history failed', e); }
+  }
+
+  function blockedMargin(){
+    return openPositions.reduce((s,p) => s + p.qty * p.entryPrice, 0);
+  }
+  function available(){
+    return account.equity - blockedMargin();
+  }
+  function todaysPnl(){
+    return history.filter(t => t.closedDate === todayStr()).reduce((s,t) => s + t.netPnl, 0);
+  }
+  function totalPnl(){
+    return account.equity - account.startingCapital;
+  }
+  function winRate(){
+    if(history.length === 0) return null;
+    const wins = history.filter(t => t.netPnl > 0).length;
+    return Math.round((wins / history.length) * 100);
+  }
+
+  function updateSideButtons(){
+    $('btnLong').classList.toggle('active', side === 'LONG');
+    $('btnShort').classList.toggle('active', side === 'SHORT');
+  }
+  $('btnLong').onclick = () => { side = 'LONG'; updateSideButtons(); };
+  $('btnShort').onclick = () => { side = 'SHORT'; updateSideButtons(); };
+
+  function updateRiskHint(){
+    const entry = parseFloat($('entryPrice').value);
+    const sl = parseFloat($('stopLoss').value);
+    const target = parseFloat($('target').value);
+    const hint = $('riskHint');
+    if(!entry || !sl || entry === sl){
+      hint.textContent = 'Set entry & stop loss to see suggested quantity (1% risk rule).';
+      hint.classList.remove('warn');
+      return;
+    }
+    const riskPerShare = Math.abs(entry - sl);
+    const riskBudget = account.equity * 0.01;
+    const suggestedQty = Math.max(1, Math.floor(riskBudget / riskPerShare));
+    let text = `Suggested qty for 1% risk (₹${riskBudget.toFixed(0)}): ${suggestedQty}`;
+    if(target && target !== entry){
+      const rr = Math.abs(target - entry) / riskPerShare;
+      text += `  ·  risk:reward ≈ 1:${rr.toFixed(2)}`;
+    }
+    hint.textContent = text;
+    hint.classList.remove('warn');
+  }
+  ['entryPrice','stopLoss','target'].forEach(id => $(id).addEventListener('input', updateRiskHint));
+
+  $('placeBtn').onclick = async () => {
+    const symbol = $('symbol').value.trim().toUpperCase();
+    const qty = parseInt($('qty').value, 10);
+    const entryPrice = parseFloat($('entryPrice').value);
+    const stopLoss = parseFloat($('stopLoss').value) || null;
+    const target = parseFloat($('target').value) || null;
+    const err = $('formError');
+    err.textContent = '';
+
+    if(!symbol){ err.textContent = 'Enter a symbol.'; return; }
+    if(!qty || qty <= 0){ err.textContent = 'Enter a valid quantity.'; return; }
+    if(!entryPrice || entryPrice <= 0){ err.textContent = 'Enter a valid entry price.'; return; }
+
+    const notional = qty * entryPrice;
+    if(notional > available()){
+      err.textContent = `Not enough available capital. This trade needs ${fmt(notional)}, you have ${fmt(available())} available.`;
+      return;
+    }
+
+    openPositions.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      symbol, side, qty, entryPrice, stopLoss, target,
+      lastPrice: entryPrice,
+      openedAt: new Date().toISOString()
+    });
+    await saveOpen();
+
+    $('symbol').value = ''; $('qty').value=''; $('entryPrice').value='';
+    $('stopLoss').value=''; $('target').value='';
+    updateRiskHint();
+    render();
+  };
+
+  function unrealizedPnl(p){
+    return (p.lastPrice - p.entryPrice) * p.qty * (p.side === 'LONG' ? 1 : -1);
+  }
+
+  function renderOpenPositions(){
+    $('openCount').textContent = openPositions.length;
+    const wrap = $('openPositionsWrap');
+    if(openPositions.length === 0){
+      wrap.innerHTML = '<div class="empty">No open positions. Place your first paper trade using the ticket on the left.</div>';
+      return;
+    }
+    let rows = '';
+    openPositions.forEach(p => {
+      const upnl = unrealizedPnl(p);
+      const upnlClass = upnl > 0 ? 'pnl-pos' : (upnl < 0 ? 'pnl-neg' : '');
+      rows += `<tr>
+        <td class="sym">${p.symbol}</td>
+        <td><span class="badge ${p.side.toLowerCase()}">${p.side}</span></td>
+        <td>${p.qty}</td>
+        <td>${p.entryPrice.toFixed(2)}</td>
+        <td><input class="last-input" type="number" step="0.05" value="${p.lastPrice.toFixed(2)}" data-id="${p.id}" /></td>
+        <td>${p.stopLoss ? p.stopLoss.toFixed(2) : '—'}</td>
+        <td>${p.target ? p.target.toFixed(2) : '—'}</td>
+        <td class="${upnlClass}">${fmt(upnl)}</td>
+        <td><button class="close-btn" data-close="${p.id}">Close</button></td>
+      </tr>`;
+      if(closingId === p.id){
+        rows += `<tr class="confirm-row"><td colspan="9">
+          <div class="confirm-inline">
+            <label style="color:var(--text-muted);font-size:12px;">Exit price</label>
+            <input type="number" step="0.05" id="exitPriceInput" value="${p.lastPrice.toFixed(2)}" />
+            <button class="btn-sm btn-confirm" id="confirmCloseBtn">Confirm close</button>
+            <button class="btn-sm btn-cancel" id="cancelCloseBtn">Cancel</button>
+          </div>
+        </td></tr>`;
+      }
+    });
+    wrap.innerHTML = `<table>
+      <thead><tr>
+        <th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Last</th><th>SL</th><th>Target</th><th>Unrealized</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+    wrap.querySelectorAll('.last-input').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const id = e.target.dataset.id;
+        const pos = openPositions.find(x => x.id === id);
+        if(pos){ pos.lastPrice = parseFloat(e.target.value) || pos.entryPrice; await saveOpen(); render(); }
+      });
+    });
+    wrap.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => { closingId = btn.dataset.close; render(); });
+    });
+    const confirmBtn = wrap.querySelector('#confirmCloseBtn');
+    if(confirmBtn){
+      confirmBtn.addEventListener('click', async () => {
+        const exitPrice = parseFloat($('exitPriceInput').value);
+        if(!exitPrice || exitPrice <= 0) return;
+        await closeTrade(closingId, exitPrice);
+      });
+    }
+    const cancelBtn = wrap.querySelector('#cancelCloseBtn');
+    if(cancelBtn) cancelBtn.addEventListener('click', () => { closingId = null; render(); });
+  }
+
+  async function closeTrade(id, exitPrice){
+    const idx = openPositions.findIndex(p => p.id === id);
+    if(idx === -1) return;
+    const p = openPositions[idx];
+    const grossPnl = (exitPrice - p.entryPrice) * p.qty * (p.side === 'LONG' ? 1 : -1);
+    const cost = $('costToggle').checked ? 20 : 0;
+    const netPnl = grossPnl - cost;
+
+    history.unshift({
+      symbol: p.symbol, side: p.side, qty: p.qty,
+      entryPrice: p.entryPrice, exitPrice, grossPnl, cost, netPnl,
+      result: netPnl > 0 ? 'WIN' : (netPnl < 0 ? 'LOSS' : 'FLAT'),
+      closedDate: todayStr(),
+      closedAt: new Date().toISOString()
+    });
+
+    account.equity += netPnl;
+    openPositions.splice(idx, 1);
+    closingId = null;
+
+    await saveAccount();
+    await saveOpen();
+    await saveHistory();
+    render();
+  }
+
+  function renderHistory(){
+    $('historyCount').textContent = history.length;
+    const wrap = $('historyWrap');
+    if(history.length === 0){
+      wrap.innerHTML = '<div class="empty">No closed trades yet — your trade log will appear here.</div>';
+      return;
+    }
+    let rows = '';
+    history.forEach(t => {
+      const cls = t.netPnl > 0 ? 'pnl-pos' : (t.netPnl < 0 ? 'pnl-neg' : '');
+      const date = new Date(t.closedAt);
+      const dateLabel = date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + ' ' + date.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      rows += `<tr>
+        <td>${dateLabel}</td>
+        <td class="sym">${t.symbol}</td>
+        <td><span class="badge ${t.side.toLowerCase()}">${t.side}</span></td>
+        <td>${t.qty}</td>
+        <td>${t.entryPrice.toFixed(2)}</td>
+        <td>${t.exitPrice.toFixed(2)}</td>
+        <td>${fmt(t.grossPnl)}</td>
+        <td>${fmt(-t.cost)}</td>
+        <td class="${cls}">${fmt(t.netPnl)}</td>
+        <td class="${cls}">${t.result}</td>
+      </tr>`;
+    });
+    wrap.innerHTML = `<table>
+      <thead><tr>
+        <th>Closed</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Gross</th><th>Cost</th><th>Net P&amp;L</th><th>Result</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  function renderStats(){
+    $('statEquity').textContent = fmt(account.equity);
+    $('statAvailable').textContent = fmt(available());
+
+    const tp = todaysPnl();
+    const tEl = $('statToday');
+    tEl.textContent = fmt(tp);
+    tEl.className = 'val ' + (tp > 0 ? 'gain' : (tp < 0 ? 'loss' : ''));
+
+    const tot = totalPnl();
+    const totEl = $('statTotal');
+    totEl.textContent = fmt(tot);
+    totEl.className = 'val ' + (tot > 0 ? 'gain' : (tot < 0 ? 'loss' : ''));
+
+    const wr = winRate();
+    $('statWinRate').textContent = wr === null ? '—' : wr + '%';
+  }
+
+  function render(){
+    renderStats();
+    renderOpenPositions();
+    renderHistory();
+    updateRiskHint();
+  }
+
+  $('resetBtn').onclick = async () => {
+    if(!confirm('Reset your paper account? This clears open positions, trade history, and equity back to ₹10,000.')) return;
+    account = { equity: DEFAULT_CAPITAL, startingCapital: DEFAULT_CAPITAL };
+    openPositions = [];
+    history = [];
+    closingId = null;
+    await saveAccount();
+    await saveOpen();
+    await saveHistory();
+    render();
+  };
+
+  loadState();
+})();
+</script>
+</body>
+</html>
