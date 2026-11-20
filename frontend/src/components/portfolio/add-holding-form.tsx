@@ -12,6 +12,8 @@ interface AddHoldingFormProps {
   onCancelEdit?: () => void;
 }
 
+const BROKERS = ["Zerodha", "Groww", "Fyers"] as const;
+
 const EMPTY: HoldingsInput = {
   symbol: "",
   quantity: 0,
@@ -213,13 +215,21 @@ export function AddHoldingForm({
 
         <label className={styles.field}>
           <span className={styles.label}>Broker</span>
-          <input
+          <select
             className={styles.input}
-            type="text"
-            placeholder="Zerodha, Groww…"
             value={form.broker ?? ""}
             onChange={(e) => setField("broker", e.target.value || null)}
-          />
+          >
+            <option value="">Select broker</option>
+            {BROKERS.map((broker) => (
+              <option key={broker} value={broker}>
+                {broker}
+              </option>
+            ))}
+            {form.broker && !BROKERS.includes(form.broker as (typeof BROKERS)[number]) && (
+              <option value={form.broker}>{form.broker}</option>
+            )}
+          </select>
         </label>
 
         <label className={styles.field}>
