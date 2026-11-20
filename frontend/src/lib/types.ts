@@ -39,6 +39,7 @@ export interface Holding {
   currentLtp: number | null;
   oneDayChangePct: number | null;
   lastUpdated: string | null;
+  createdAt: string;
 }
 
 export interface HoldingExit {

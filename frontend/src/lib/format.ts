@@ -61,6 +61,14 @@ export function formatTime(iso: string): string {
   }).format(parseBackendDate(iso));
 }
 
+export function formatShortDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit",
+  }).format(parseBackendDate(iso));
+}
+
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
     weekday: "short",
