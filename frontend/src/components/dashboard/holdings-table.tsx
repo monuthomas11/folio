@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import type { AnalysisRating, Holding } from "@/lib/types";
+import { Fragment } from "react";
+import type { AnalysisRating, Holding, HoldingsInput } from "@/lib/types";
 import { holdingStats } from "@/lib/holdings";
 import { formatINRFractionless, formatPrice, formatQuantity, formatSigned, parseBackendDate } from "@/lib/format";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
 import { IconCheck, IconPencil, IconRefresh, IconTrash } from "@/components/icons";
+import { HoldingInlineEdit } from "./holding-inline-edit";
 import styles from "./holdings-table.module.css";
 
 interface HoldingsTableProps {
@@ -14,6 +16,9 @@ interface HoldingsTableProps {
   refreshingSymbols: Set<string>;
   onRefreshRow: (symbol: string) => void;
   onEdit?: (holding: Holding) => void;
+  onCancelEdit?: () => void;
+  onSave?: (id: string, input: HoldingsInput) => Promise<void>;
+  editingId?: string | null;
   onDelete?: (holding: Holding) => void;
   onExit?: (holding: Holding) => void;
   removingIds?: Set<string>;
@@ -21,6 +26,8 @@ interface HoldingsTableProps {
   lastUpdated: string | null;
   aiRatings?: Record<string, AnalysisRating>;
 }
+
+const COLUMN_COUNT = 13;
 
 const STATUS_META: Record<
   string,
@@ -63,6 +70,9 @@ export function HoldingsTable({
   refreshingSymbols,
   onRefreshRow,
   onEdit,
+  onCancelEdit,
+  onSave,
+  editingId,
   onDelete,
   onExit,
   removingIds,
@@ -139,102 +149,117 @@ export function HoldingsTable({
               const refreshing = refreshingSymbols.has(h.symbol);
               const removing = removingIds?.has(h.id) ?? false;
               const exiting = exitingIds?.has(h.id) ?? false;
+              const isEditing = editingId === h.id;
               return (
-                <tr key={h.id}>
-                  <td>
-                    <div className={styles.symbolCell}>
-                      <Link href={`/holdings/${h.id}`} className={styles.symbolLink}>
-                        {h.symbol}
-                      </Link>
-                      {h.broker && <span className={styles.broker}>{h.broker}</span>}
-                    </div>
-                  </td>
-                  <td className="num numeric">{formatQuantity(h.quantity)}</td>
-                  <td className="num numeric">{formatPrice(h.avgBuyPrice)}</td>
-                  <td className="num numeric">
-                    <span className={h.currentLtp != null ? styles.ltp : styles.pending}>
-                      {h.currentLtp != null ? formatPrice(h.currentLtp) : "—"}
-                    </span>
-                  </td>
-                  <td className="num numeric"><DayChangeCell value={h.oneDayChangePct} /></td>
-                  <td className="num numeric">{h.stopLoss != null ? formatPrice(h.stopLoss) : "—"}</td>
-                  <td className="num numeric">{h.targetPrice != null ? formatPrice(h.targetPrice) : "—"}</td>
-                  <td className="num numeric">{formatINRFractionless(s.invested)}</td>
-                  <td className="num numeric">{formatINRFractionless(s.currentValue)}</td>
-                  <td className="numeric">
-                    <PnLCell pnl={s.pnl} pnlPct={s.pnlPct} />
-                  </td>
-                  <td>
-                    <StatusPill tone={meta.tone} label={meta.label}>
-                      {meta.label}
-                    </StatusPill>
-                  </td>
-                  <td>
-                    {aiRatings?.[h.symbol] ? (
-                      <Link href={`/holdings/${h.id}`} className={styles.aiLink}>
-                        <StatusPill tone={AI_TONES[aiRatings[h.symbol]]}>
-                          {aiRatings[h.symbol]}
-                        </StatusPill>
-                      </Link>
-                    ) : (
-                      <span className={styles.aiNone}>—</span>
-                    )}
-                  </td>
-                  <td className={styles.actionCell}>
-                    <div className={styles.actions}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={styles.iconAction}
-                        onClick={() => onEdit?.(h)}
-                        aria-label={`Edit ${h.symbol}`}
-                        title="Edit holding"
-                      >
-                        <IconPencil width={14} height={14} />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={styles.iconAction}
-                        onClick={() => onRefreshRow(h.symbol)}
-                        loading={refreshing}
-                        disabled={h.currentLtp == null && !refreshing}
-                        aria-label={`Fetch latest price for ${h.symbol}`}
-                        title="Fetch price"
-                      >
-                        {!refreshing && <IconRefresh width={14} height={14} />}
-                        {refreshing ? "Fetching" : "Fetch"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={styles.removeAction}
-                        onClick={() => onExit?.(h)}
-                        loading={exiting}
-                        disabled={exiting || removing}
-                        aria-label={`Exit ${h.symbol}`}
-                        title="Record an exit"
-                      >
-                        {!exiting && <IconCheck width={14} height={14} />}
-                        {exiting ? "Exiting" : "Exit"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={styles.removeAction}
-                        onClick={() => onDelete?.(h)}
-                        loading={removing}
-                        disabled={removing}
-                        aria-label={`Remove ${h.symbol}`}
-                        title="Remove holding"
-                      >
-                        {!removing && <IconTrash width={14} height={14} />}
-                        {removing ? "Removing" : "Remove"}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                <Fragment key={h.id}>
+                  <tr className={isEditing ? styles.rowEditing : undefined}>
+                    <td>
+                      <div className={styles.symbolCell}>
+                        <Link href={`/holdings/${h.id}`} className={styles.symbolLink}>
+                          {h.symbol}
+                        </Link>
+                        {h.broker && <span className={styles.broker}>{h.broker}</span>}
+                      </div>
+                    </td>
+                    <td className="num numeric">{formatQuantity(h.quantity)}</td>
+                    <td className="num numeric">{formatPrice(h.avgBuyPrice)}</td>
+                    <td className="num numeric">
+                      <span className={h.currentLtp != null ? styles.ltp : styles.pending}>
+                        {h.currentLtp != null ? formatPrice(h.currentLtp) : "—"}
+                      </span>
+                    </td>
+                    <td className="num numeric"><DayChangeCell value={h.oneDayChangePct} /></td>
+                    <td className="num numeric">{h.stopLoss != null ? formatPrice(h.stopLoss) : "—"}</td>
+                    <td className="num numeric">{h.targetPrice != null ? formatPrice(h.targetPrice) : "—"}</td>
+                    <td className="num numeric">{formatINRFractionless(s.invested)}</td>
+                    <td className="num numeric">{formatINRFractionless(s.currentValue)}</td>
+                    <td className="numeric">
+                      <PnLCell pnl={s.pnl} pnlPct={s.pnlPct} />
+                    </td>
+                    <td>
+                      <StatusPill tone={meta.tone} label={meta.label}>
+                        {meta.label}
+                      </StatusPill>
+                    </td>
+                    <td>
+                      {aiRatings?.[h.symbol] ? (
+                        <Link href={`/holdings/${h.id}`} className={styles.aiLink}>
+                          <StatusPill tone={AI_TONES[aiRatings[h.symbol]]}>
+                            {aiRatings[h.symbol]}
+                          </StatusPill>
+                        </Link>
+                      ) : (
+                        <span className={styles.aiNone}>—</span>
+                      )}
+                    </td>
+                    <td className={styles.actionCell}>
+                      <div className={styles.actions}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={styles.iconAction}
+                          onClick={() => onEdit?.(h)}
+                          aria-label={`Edit ${h.symbol}`}
+                          title="Edit holding"
+                          aria-expanded={isEditing}
+                        >
+                          <IconPencil width={14} height={14} />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={styles.iconAction}
+                          onClick={() => onRefreshRow(h.symbol)}
+                          loading={refreshing}
+                          disabled={h.currentLtp == null && !refreshing}
+                          aria-label={`Fetch latest price for ${h.symbol}`}
+                          title="Fetch price"
+                        >
+                          {!refreshing && <IconRefresh width={14} height={14} />}
+                          {refreshing ? "Fetching" : "Fetch"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={styles.removeAction}
+                          onClick={() => onExit?.(h)}
+                          loading={exiting}
+                          disabled={exiting || removing}
+                          aria-label={`Exit ${h.symbol}`}
+                          title="Record an exit"
+                        >
+                          {!exiting && <IconCheck width={14} height={14} />}
+                          {exiting ? "Exiting" : "Exit"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={styles.removeAction}
+                          onClick={() => onDelete?.(h)}
+                          loading={removing}
+                          disabled={removing}
+                          aria-label={`Remove ${h.symbol}`}
+                          title="Remove holding"
+                        >
+                          {!removing && <IconTrash width={14} height={14} />}
+                          {removing ? "Removing" : "Remove"}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isEditing && onSave && (
+                    <tr className={styles.editRow}>
+                      <td colSpan={COLUMN_COUNT} className={styles.editCell}>
+                        <HoldingInlineEdit
+                          holding={h}
+                          onSave={onSave}
+                          onCancel={() => onCancelEdit?.()}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>
@@ -248,6 +273,7 @@ export function HoldingsTable({
           const refreshing = refreshingSymbols.has(h.symbol);
           const removing = removingIds?.has(h.id) ?? false;
           const exiting = exitingIds?.has(h.id) ?? false;
+          const isEditing = editingId === h.id;
           return (
             <article key={h.id} className={styles.card}>
               <header className={styles.cardHeader}>
@@ -261,97 +287,108 @@ export function HoldingsTable({
                   {meta.label}
                 </StatusPill>
               </header>
-              <dl className={styles.cardGrid}>
-                <div>
-                  <dt>Qty</dt>
-                  <dd className="num">{formatQuantity(h.quantity)}</dd>
-                </div>
-                <div>
-                  <dt>Avg</dt>
-                  <dd className="num">{formatPrice(h.avgBuyPrice)}</dd>
-                </div>
-                <div>
-                  <dt>LTP</dt>
-                  <dd className="num">
-                    <span className={h.currentLtp != null ? styles.ltp : styles.pending}>
-                      {h.currentLtp != null ? formatPrice(h.currentLtp) : "—"}
-                    </span>
-                  </dd>
-                </div>
-                <div>
-                  <dt>1D change</dt>
-                  <dd className="num"><DayChangeCell value={h.oneDayChangePct} /></dd>
-                </div>
-                <div>
-                  <dt>SL / Target</dt>
-                  <dd className="num">
-                    {h.stopLoss != null ? formatPrice(h.stopLoss) : "—"} /{" "}
-                    {h.targetPrice != null ? formatPrice(h.targetPrice) : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Current value</dt>
-                  <dd className="num">{formatINRFractionless(s.currentValue)}</dd>
-                </div>
-                <div>
-                  <dt>P/L</dt>
-                  <dd>
-                    <PnLCell pnl={s.pnl} pnlPct={s.pnlPct} />
-                  </dd>
-                </div>
-              </dl>
-              <div className={styles.cardFooter}>
-                <div className={styles.actions}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onRefreshRow(h.symbol)}
-                    loading={refreshing}
-                    disabled={h.currentLtp == null && !refreshing}
-                  >
-                    {!refreshing && <IconRefresh width={14} height={14} />}
-                    {refreshing ? "Fetching" : "Fetch price"}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onEdit?.(h)}
-                  >
-                    <IconPencil width={14} height={14} />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className={styles.exitAction}
-                    onClick={() => onExit?.(h)}
-                    loading={exiting}
-                    disabled={exiting || removing}
-                  >
-                    {!exiting && <IconCheck width={14} height={14} />}
-                    {exiting ? "Exiting" : "Exit holding"}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className={styles.removeAction}
-                    onClick={() => onDelete?.(h)}
-                    loading={removing}
-                    disabled={removing}
-                    aria-label={`Remove ${h.symbol}`}
-                    title="Remove holding"
-                  >
-                    {!removing && <IconTrash width={14} height={14} />}
-                    {removing ? "Removing" : "Remove"}
-                  </Button>
-                  <Link
-                    href={`/holdings/${h.id}`}
-                    className={`${styles.aiLink} ${styles.viewLink}`}
-                  >
-                    {aiRatings?.[h.symbol] ? "View analysis" : "View"}
-                  </Link>
-                </div>
-              </div>
+              {isEditing && onSave ? (
+                <HoldingInlineEdit
+                  holding={h}
+                  onSave={onSave}
+                  onCancel={() => onCancelEdit?.()}
+                />
+              ) : (
+                <>
+                  <dl className={styles.cardGrid}>
+                    <div>
+                      <dt>Qty</dt>
+                      <dd className="num">{formatQuantity(h.quantity)}</dd>
+                    </div>
+                    <div>
+                      <dt>Avg</dt>
+                      <dd className="num">{formatPrice(h.avgBuyPrice)}</dd>
+                    </div>
+                    <div>
+                      <dt>LTP</dt>
+                      <dd className="num">
+                        <span className={h.currentLtp != null ? styles.ltp : styles.pending}>
+                          {h.currentLtp != null ? formatPrice(h.currentLtp) : "—"}
+                        </span>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>1D change</dt>
+                      <dd className="num"><DayChangeCell value={h.oneDayChangePct} /></dd>
+                    </div>
+                    <div>
+                      <dt>SL / Target</dt>
+                      <dd className="num">
+                        {h.stopLoss != null ? formatPrice(h.stopLoss) : "—"} /{" "}
+                        {h.targetPrice != null ? formatPrice(h.targetPrice) : "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Current value</dt>
+                      <dd className="num">{formatINRFractionless(s.currentValue)}</dd>
+                    </div>
+                    <div>
+                      <dt>P/L</dt>
+                      <dd>
+                        <PnLCell pnl={s.pnl} pnlPct={s.pnlPct} />
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className={styles.cardFooter}>
+                    <div className={styles.actions}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onRefreshRow(h.symbol)}
+                        loading={refreshing}
+                        disabled={h.currentLtp == null && !refreshing}
+                      >
+                        {!refreshing && <IconRefresh width={14} height={14} />}
+                        {refreshing ? "Fetching" : "Fetch price"}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onEdit?.(h)}
+                        aria-expanded={isEditing}
+                      >
+                        <IconPencil width={14} height={14} />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className={styles.exitAction}
+                        onClick={() => onExit?.(h)}
+                        loading={exiting}
+                        disabled={exiting || removing}
+                      >
+                        {!exiting && <IconCheck width={14} height={14} />}
+                        {exiting ? "Exiting" : "Exit holding"}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className={styles.removeAction}
+                        onClick={() => onDelete?.(h)}
+                        loading={removing}
+                        disabled={removing}
+                        aria-label={`Remove ${h.symbol}`}
+                        title="Remove holding"
+                      >
+                        {!removing && <IconTrash width={14} height={14} />}
+                        {removing ? "Removing" : "Remove"}
+                      </Button>
+                      <Link
+                        href={`/holdings/${h.id}`}
+                        className={`${styles.aiLink} ${styles.viewLink}`}
+                      >
+                        {aiRatings?.[h.symbol] ? "View analysis" : "View"}
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
             </article>
           );
         })}

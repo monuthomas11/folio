@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { Holding, HoldingsInput } from "@/lib/types";
+import type { HoldingsInput } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import styles from "./add-holding-form.module.css";
 
 interface AddHoldingFormProps {
   onAdded: (input: HoldingsInput) => Promise<void>;
-  onUpdated?: (id: string, input: HoldingsInput) => Promise<void>;
-  editing?: Holding | null;
-  onCancelEdit?: () => void;
 }
 
 const BROKERS = ["Zerodha", "Groww", "Fyers"] as const;
@@ -24,24 +21,7 @@ const EMPTY: HoldingsInput = {
   sector: null,
 };
 
-function toInput(h: Holding): HoldingsInput {
-  return {
-    symbol: h.symbol,
-    quantity: h.quantity,
-    avgBuyPrice: h.avgBuyPrice,
-    stopLoss: h.stopLoss,
-    targetPrice: h.targetPrice,
-    broker: h.broker,
-    sector: h.sector,
-  };
-}
-
-export function AddHoldingForm({
-  onAdded,
-  onUpdated,
-  editing,
-  onCancelEdit,
-}: AddHoldingFormProps) {
+export function AddHoldingForm({ onAdded }: AddHoldingFormProps) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<HoldingsInput>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
@@ -49,7 +29,7 @@ export function AddHoldingForm({
   const prefillApplied = useRef(false);
 
   useEffect(() => {
-    if (editing || prefillApplied.current || typeof window === "undefined") return;
+    if (prefillApplied.current || typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const prefilledSymbol = params.get("symbol");
     if (!prefilledSymbol) return;
@@ -61,15 +41,7 @@ export function AddHoldingForm({
       targetPrice: params.has("targetPrice") ? Number(params.get("targetPrice")) : null,
     }));
     setOpen(true);
-  }, [editing]);
-
-  useEffect(() => {
-    if (editing) {
-      setForm(toInput(editing));
-      setOpen(true);
-      setError(null);
-    }
-  }, [editing]);
+  }, []);
 
   const setField = <K extends keyof HoldingsInput>(key: K, value: HoldingsInput[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -88,12 +60,7 @@ export function AddHoldingForm({
     }
     setSubmitting(true);
     try {
-      if (editing && onUpdated) {
-        await onUpdated(editing.id, form);
-        onCancelEdit?.();
-      } else {
-        await onAdded(form);
-      }
+      await onAdded(form);
       setForm(EMPTY);
       setOpen(false);
     } catch (err) {
@@ -111,7 +78,6 @@ export function AddHoldingForm({
     setOpen(false);
     setForm(EMPTY);
     setError(null);
-    onCancelEdit?.();
   };
 
   if (!open) {
@@ -124,14 +90,10 @@ export function AddHoldingForm({
     );
   }
 
-  const isEditing = Boolean(editing);
-
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       <div className={styles.formHeader}>
-        <h2 className={styles.formTitle}>
-          {isEditing ? `Edit ${form.symbol}` : "Add a holding"}
-        </h2>
+        <h2 className={styles.formTitle}>Add a holding</h2>
         <p className={styles.formHint}>
           These are your records — we never overwrite them. Prices refresh on demand.
         </p>
@@ -255,7 +217,7 @@ export function AddHoldingForm({
           Cancel
         </Button>
         <Button type="submit" loading={submitting}>
-          {submitting ? (isEditing ? "Saving" : "Adding") : isEditing ? "Save changes" : "Add holding"}
+          {submitting ? "Adding" : "Add holding"}
         </Button>
       </div>
     </form>

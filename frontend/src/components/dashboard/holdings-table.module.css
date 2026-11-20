@@ -227,6 +227,25 @@
   background: oklch(0.985 0.004 170);
 }
 
+.table tbody tr.rowEditing td {
+  background: oklch(0.975 0.012 170);
+  border-bottom-color: transparent;
+}
+
+.table tbody tr.rowEditing .actionCell {
+  background: oklch(0.975 0.012 170);
+}
+
+.table td.editCell {
+  padding: 0 var(--space-4) var(--space-4);
+  white-space: normal;
+  background: var(--surface);
+}
+
+.table tbody tr.editRow:hover {
+  background: transparent;
+}
+
 .iconAction {
   padding: 0 var(--space-3);
   color: var(--muted);

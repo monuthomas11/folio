@@ -81,7 +81,7 @@ export default function PortfolioPage() {
     async (id: string, input: HoldingsInput) => {
       await api.updateHolding(id, input);
       setEditing(null);
-      await load();
+      await load(true);
     },
     [load],
   );
@@ -188,12 +188,7 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      <AddHoldingForm
-        onAdded={handleAdded}
-        onUpdated={handleUpdated}
-        editing={editing}
-        onCancelEdit={() => setEditing(null)}
-      />
+      <AddHoldingForm onAdded={handleAdded} />
 
       <div className={styles.transferBar}>
         <ImportExport
@@ -221,6 +216,9 @@ export default function PortfolioPage() {
             refreshingSymbols={refreshingSymbols}
             onRefreshRow={handleRefreshRow}
             onEdit={setEditing}
+            editingId={editing?.id ?? null}
+            onCancelEdit={() => setEditing(null)}
+            onSave={handleUpdated}
             onDelete={handleDelete}
             onExit={handleExit}
             removingIds={removingIds}
